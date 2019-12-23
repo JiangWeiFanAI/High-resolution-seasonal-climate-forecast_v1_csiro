@@ -6,7 +6,7 @@ from args_parameter import args
 import torch,torchvision
 import numpy as np
 
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset,random_split
 from torchvision import datasets, models, transforms
 
 import time
@@ -29,15 +29,17 @@ dates=[start_date + timedelta(x) for x in range((end_date - start_date).days + 1
 
 # domain = [111.975, 156.275, -44.525, -9.975]
 
+# domain = [111.975, 156.275, -44.525, -9.975]
+
 file_ACCESS_dir="F:/climate/access-s1/pr/daily/"#"/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
 file_BARRA_dir="F:/climate/barra/"
-
+from sklearn.model_selection import train_test_split
 class ACCESS_BARRA_v1(Dataset):
     '''
     scale is size(hr)=size(lr)*scale
     version_1_documention: the data we use is raw data that store at NCI
     '''
-    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,args=args):
+    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=args):
         self.file_BARRA_dir = args.file_BARRA_dir
         self.file_ACCESS_dir = args.file_ACCESS_dir
         
@@ -47,7 +49,12 @@ class ACCESS_BARRA_v1(Dataset):
         
         self.scale = args.scale[0]
         self.regin = regin
-
+        
+#         if regin=="AUS":
+#             self.shape=(314,403,1,1)
+#             self.domain=[111.975, 156.275, -44.525, -9.975]
+#         else:
+#             self.shape=(768,1200,1,1)
                 
         self.dates = self.date_range(start_date, end_date)
         
@@ -86,16 +93,21 @@ class ACCESS_BARRA_v1(Dataset):
             for date in dates:
                 filename="da_pr_"+date.strftime("%Y%m%d")+"_"+en+".nc"
                 access_path=rootdir+en+"/"+"da_pr_"+date.strftime("%Y%m%d")+"_"+en+".nc"
-
+#                 print(access_path)
                 if os.path.exists(access_path):
                     for i in range(leading_time_we_use):
                         path=[access_path]
+                        
+#                         barra_path=file_BARRA_dir+"/accum_prcp-an-spec-PT0H-BARRA_R-v1-"+((date+timedelta(i)).strftime("%Y%m%d"))
                         barra_date=date+timedelta(i)
-
+#                         self.data_dir+date.strftime('%m')+"/accum_prcp-an-spec-PT0H-BARRA_R-v1-"\
+#                         +date.strftime('%Y%m%d')+"T"+enum[i]+"Z.nc"
                         path.append(barra_date)
                         path.append(i)
+#                         print(path)
                         _files.append(path)
     
+    #最后去掉第一行，然后shuffle
         if args.nine2nine and args.date_minus_one==1:
             del _files[0]
         return _files
@@ -110,23 +122,27 @@ class ACCESS_BARRA_v1(Dataset):
         '''
         #read_data filemame[idx]
         access_filename,date_for_BARRA,time_leading=self.filename_list[idx]
+#         print(type(date_for_BARRA))
+#         low_filename,high_filename,time_leading=self.filename_list[idx]
 
-        data_low=dpt.read_access_data(access_filename,idx=idx)
+        data_low=dpt.read_access_data(access_filename,idx=time_leading)
         train_data_raw=dpt.map_aust(data_low,domain=args.domain,xrarray=False)
+        
+#         domain = [train_data.lon.data.min(), train_data.lon.data.max(), train_data.lat.data.min(), train_data.lat.data.max()]
+#         print(domain)
 
-        data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=False)
+        data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=True)
         label=dpt.map_aust(data_high,domain=args.domain,xrarray=False)#,domain=domain)
         
         train_data=dpt.interp_tensor_2d(train_data_raw,(78,100))
-
+        
+#         print(train_data_raw.shape,label.shape)
+#         print(train_data_raw.shape[0]*4,train_data_raw.shape[1]*4)
+#         print(label.shape[0]/4,label.shape[1]/4)
+#         print(type(train_data))
 
         return train_data*86400,label
 
     
 
-# ACCESS_BARRA(file_access_dir,file_BARRA_dir).filename_list
-data_set=ACCESS_BARRA_v1(args=args)
-print(len(data_set))
-# for i in data_set.filename_list:
-#     print(i)
-# print(data_set[0])
+
