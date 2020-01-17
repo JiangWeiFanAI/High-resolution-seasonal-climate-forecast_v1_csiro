@@ -29,7 +29,7 @@ levels["year"]  = [0.,  50, 100, 200, 300, 400, 600, 1000, 1500, 2000, 3000, 500
 
 
 
-prcp_colours = [
+prcp_colours_0 = [
                    "#FFFFFF", 
                    '#ffffd9',
                    '#edf8b1',
@@ -96,7 +96,6 @@ def read_access_data(filename, var_name="pr", lat_name="lat", lon_name="lon",idx
         var = data[var_name][:][idx]
         lats = data[lat_name][:]
         lons = data[lon_name][:]
-
         data.close()
         return xr.DataArray(var,coords=[lats,lons],dims=["lat","lon"])
 
@@ -117,7 +116,7 @@ def read_barra_data_an(root_dir,date_time,nine2nine=False):
                 return
 
                 
-            var,lats,lons=dpt.load_2D_netCDF(filename,'accum_prcp',xarray=False)
+            var,lats,lons=load_2D_netCDF(filename,'accum_prcp',xarray=False)
             daily+=var
         return xr.DataArray(daily,coords=[lats,lons],dims=["lat","lon"])
     
@@ -125,7 +124,7 @@ def read_barra_data_an(root_dir,date_time,nine2nine=False):
     else:
         for i in range(4):
             filename=root_dir+date_time.strftime("%Y/%m/")+"accum_prcp-an-spec-PT0H-BARRA_R-v1.1-"+date_time.strftime("%Y%m%d")+"T"+enum[i]+"Z.nc"
-            var,lats,lons=dpt.load_2D_netCDF(filename,'accum_prcp',xarray=False)
+            var,lats,lons=load_2D_netCDF(filename,'accum_prcp',xarray=False)
             daily+=var
         return xr.DataArray(daily,coords=[lats,lons],dims=["lat","lon"])
 
@@ -169,6 +168,7 @@ def read_barra_data_fc(root_dir,date_time,nine2nine=True,date_minus_one=1):#args
                 filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
                 dataset=Dataset(filename)
                 daily+=np.sum(dataset["accum_prcp"][:],axis=0)
+#             print(date_we_use)
 
 
         return xr.DataArray(daily,coords=[lats,lons],dims=["lat","lon"])
@@ -222,7 +222,7 @@ def map_aust(data, lat=None, lon=None,domain = [111.85, 156.275, -44.35, -9.975]
     return da,llats,llons
 
 
-def draw_BARRA_aus(data, domain = [111.85, 155.875, -44.35, -9.975], level="day" ,titles_on = True, title = "BARRA-R precipitation", colormap = prcp_colormap, cmap_label = "Precipitation (mm)",save=False,path=""):
+def draw_aus(data, domain = [111.85, 155.875, -44.35, -9.975], level="day" ,titles_on = True, title = "BARRA-R precipitation", colormap = prcp_colormap, cmap_label = "Precipitation (mm)",save=False,path=""):
     """ basema_ploting .py
 This function takes a 2D data set of a variable from BARRA and maps the data on miller projection. 
 The map default span is longitude between 135E and 155E, and the span for latitudes is -45 to -30, this is SE Australia. 

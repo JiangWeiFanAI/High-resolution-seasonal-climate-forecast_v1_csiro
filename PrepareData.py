@@ -136,12 +136,11 @@ class ACCESS_BARRA_v1(Dataset):
         
         train_data=dpt.interp_tensor_2d(train_data_raw,(78,100))
         
-#         print(train_data_raw.shape,label.shape)
-#         print(train_data_raw.shape[0]*4,train_data_raw.shape[1]*4)
-#         print(label.shape[0]/4,label.shape[1]/4)
-#         print(type(train_data))
-
-        return train_data*86400,label
+        if self.transform:
+            return self.transform( np.expand_dims(train_data,axis=3)*86400),self.transform(np.expand_dims(label,axis=3))
+        else:
+            return np.expand_dims(train_data,axis=3)*86400,np.expand_dims(label,axis=3)
+#         return np.reshape(train_data,(78,100,1))*86400,np.reshape(label,(312,400,1))
 
     
 
