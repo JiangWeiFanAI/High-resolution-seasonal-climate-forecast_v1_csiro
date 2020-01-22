@@ -32,16 +32,28 @@ def get_filename(rootdir):
                 _files.append(path)
     return _files
 
+
 a=get_filename(file_access_dir)
 print("the length of dataset: "+str(len(a)))
-num=324*432*217*len(a)
-print(num)
-leading_time=217
+num=0
 total=0
 
+max_value=0
+min_value=10000
+shape=[]
 for filename in tqdm(a):
-    data=netDataset(filename)
-    total+=np.sum(data["pr"][:])
     
+    data=netDataset(filename)
+    num+=data["pr"][:].shape[0]*data["pr"][:].shape[1]*data["pr"][:].shape[2]
+    total+=np.sum(data["pr"][:])*86400
+    if max_value< (np.max(data["pr"][:])*86400):
+        max_value=np.max(data["pr"][:])*86400
+    if min_value> np.min(np.max(data["pr"][:])*86400):
+        min_value=np.min(np.max(data["pr"][:])*86400)
+    print("\n")
 #     print(data["pr"][:].sum())
 print("rgb_mean: "+str(total/num))
+print("rgb_mean_real: "+str((total/num)/max_value ))
+
+print("max_value: "+str(max_value))
+print("min_value: "+str(min_value))

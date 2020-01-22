@@ -59,7 +59,7 @@ def set_parser():
     parser.add_argument('--patch_size', type=int, default=96,
                         help='output patch size')
     #??????????????????????????????????????????????????
-    parser.add_argument('--rgb_range', type=int, default=300,
+    parser.add_argument('--rgb_range', type=int, default=400,
                         help='maximum value of RGB')
     parser.add_argument('--n_colors', type=int, default=1,
                         help='number of color channels to use')
@@ -95,7 +95,7 @@ def set_parser():
                         help='reset the training')
     parser.add_argument('--test_every', type=int, default=1000,
                         help='do test per every N batches')
-    parser.add_argument('--epochs', type=int, default=3000,
+    parser.add_argument('--epochs', type=int, default=300,
                         help='number of epochs to train')
     parser.add_argument('--batch_size', type=int, default=16,
                         help='input batch size for training')
