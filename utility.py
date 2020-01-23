@@ -174,6 +174,7 @@ class checkpoint():
 
 def quantize(img, rgb_range):
     pixel_range = 255 / rgb_range
+    #将图像映射到255的范围    将像素限制在0-255  取近似   除以255 乘 rgb
     return img.mul(pixel_range).clamp(0, 255).round().div(pixel_range)
 
 def calc_psnr(sr, hr, scale, rgb_range, benchmark=False):

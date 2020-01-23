@@ -57,6 +57,7 @@ class Model(nn.Module):
         if self.n_GPUs == 1:
             return self.model
         else:
+            return self.model
             return self.model.module
 
     def state_dict(self, **kwargs):

@@ -73,7 +73,9 @@ class RCAN(nn.Module):
         scale = args.scale[0]
         act = nn.ReLU(True)
         print('accesss-s1 mean (0.4690, 0.4490, 0.4036)')
-        rgb_mean = (0.4690, 0.4490, 0.4036)
+        rgb_mean = (0.0020388064770,0.0020388064770,0.0020388064770)
+        rgb_mean = [0.0020388064770]
+        rgb_std = [1.0]
         # RGB mean for DIV2K 1-800
         #rgb_mean = (0.4488, 0.4371, 0.4040)
         # RGB mean for DIVFlickr2K 1-3450
@@ -84,8 +86,8 @@ class RCAN(nn.Module):
 #         elif args.data_train == 'DIVFlickr2K':
 #             print('Use DIVFlickr2K mean (0.4690, 0.4490, 0.4036)')
 #             rgb_mean = (0.4690, 0.4490, 0.4036)
-        rgb_std = (1.0, 1.0, 1.0)
-        self.sub_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std)
+        
+        self.sub_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std,args.channels)
         
         # define head module
         modules_head = [conv(args.n_colors, n_feats, kernel_size)]

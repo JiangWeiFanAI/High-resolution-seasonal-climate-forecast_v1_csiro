@@ -18,6 +18,7 @@ start_date=date(1990, 1, 1)
 end_date=date(2012,12,31)
 leading_time=217
 leading_time_we_use=31
+
 dates=[start_date + timedelta(x) for x in range((end_date - start_date).days + 1)]
 
 def get_filename(rootdir):
@@ -42,7 +43,6 @@ max_value=0
 min_value=10000
 shape=[]
 for filename in tqdm(a):
-    
     data=netDataset(filename)
     num+=data["pr"][:].shape[0]*data["pr"][:].shape[1]*data["pr"][:].shape[2]
     total+=np.sum(data["pr"][:])*86400
@@ -51,7 +51,10 @@ for filename in tqdm(a):
     if min_value> np.min(np.max(data["pr"][:])*86400):
         min_value=np.min(np.max(data["pr"][:])*86400)
     print("\n")
-#     print(data["pr"][:].sum())
+    
+    
+
+
 print("rgb_mean: "+str(total/num))
 print("rgb_mean_real: "+str((total/num)/max_value ))
 
