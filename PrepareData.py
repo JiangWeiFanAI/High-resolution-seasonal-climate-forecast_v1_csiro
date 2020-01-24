@@ -33,7 +33,6 @@ ensemble=['e01','e02']
 
 file_ACCESS_dir="F:/climate/access-s1/pr/daily/"#"/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
 file_BARRA_dir="F:/climate/barra/"
-from sklearn.model_selection import train_test_split
 class ACCESS_BARRA_v1(Dataset):
     '''
     scale is size(hr)=size(lr)*scale
@@ -179,11 +178,11 @@ class ACCESS_v1(Dataset):
         self.filename_list=self.get_filename_with_time_order(args.file_ACCESS_dir)
         _,date_for_BARRA,time_leading=self.filename_list[0]
 
-        data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=True)
-        data_exp=dpt.map_aust(data_high,domain=args.domain,xrarray=True)#,domain=domain)
-        self.lat=data_exp["lat"]
-        self.lon=data_exp["lon"]        
-        
+#         data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=True)
+#         data_exp=dpt.map_aust(data_high,domain=args.domain,xrarray=True)#,domain=domain)
+#         self.lat=data_exp["lat"]
+#         self.lon=data_exp["lon"]        
+#         
     def __len__(self):
         return len(self.filename_list)
     

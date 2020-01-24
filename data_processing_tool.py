@@ -15,7 +15,6 @@ from matplotlib.animation import FuncAnimation
 # import cartopy.crs as ccrs
 from matplotlib import cm
 # from mpl_toolkits.basemap import Basemap
-import cv2
 import warnings
 
 warnings.filterwarnings("ignore")
