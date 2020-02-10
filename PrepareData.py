@@ -114,6 +114,7 @@ class ACCESS_BARRA_v1(Dataset):
                         _files.append(path)
     
     #最后去掉第一行，然后shuffle
+        print(len(_files))
         if args.nine2nine and args.date_minus_one==1:
             del _files[0]
         return _files

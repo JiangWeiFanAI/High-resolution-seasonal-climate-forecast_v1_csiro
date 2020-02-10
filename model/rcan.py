@@ -72,8 +72,8 @@ class RCAN(nn.Module):
         reduction = args.reduction 
         scale = args.scale[0]
         act = nn.ReLU(True)
-        print('accesss-s1 mean (0.4690, 0.4490, 0.4036)')
-        rgb_mean = (0.0020388064770,0.0020388064770,0.0020388064770)
+        print('accesss-s1 mean (0.4690)')
+#         rgb_mean = (0.0020388064770,0.0020388064770,0.0020388064770)
         rgb_mean = [0.0020388064770]
         rgb_std = [1.0]
         # RGB mean for DIV2K 1-800
