@@ -91,12 +91,23 @@ def load_3D_netCDF(filename, var_name="pr", lat_name="lat", lon_name="lon",idx=0
     return xr.DataArray(var,coords=[lats,lons],dims=["lat","lon"])
 
 def read_access_data(filename, var_name="pr", lat_name="lat", lon_name="lon",idx=0):
-        data = Dataset(filename, 'r')
-        var = data[var_name][:][idx]
-        lats = data[lat_name][:]
-        lons = data[lon_name][:]
-        data.close()
-        return xr.DataArray(var,coords=[lats,lons],dims=["lat","lon"])
+    data = Dataset(filename, 'r')
+    var = data[var_name][:][idx]
+    lats = data[lat_name][:]
+    lons = data[lon_name][:]
+    data.close()
+    return xr.DataArray(var,coords=[lats,lons],dims=["lat","lon"])
+
+def read_access_zg(filename, var_name="zg", lat_name="lat", lon_name="lon",idx=0):
+    data = Dataset(filename, 'r')
+    var = data[var_name][:][idx]
+    level=data["z1_p_level"][:]
+    lats = data[lat_name][:]
+    lons = data[lon_name][:]
+    data.close()
+    return xr.DataArray(var,coords=[level,lats,lons],dims=["level","lat","lon"])
+
+
 
 def read_barra_data_an(root_dir,date_time,nine2nine=False):
     shape=(768,1200)
@@ -130,11 +141,18 @@ def read_barra_data_an(root_dir,date_time,nine2nine=False):
 
 def read_barra_data_fc(root_dir,date_time,nine2nine=True,date_minus_one=1):#argse
     """
-    accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900130T0600Z.sub.nc          subscript times 4-6
+    How to use: 
+    
+    root_dir usually is /g/data/ma05/BARRA_R/v1/forecast/spec/accum_prcp/
+   date time is the precipitation of that day you want to retrival
+   nine2nine: boolean. the precipitation you retrival whether recording from 9am to 9pm. if nagative, it is accumulate from 0am to 24 pm
+   date_minus_one: base on date_time, if 1, precipitation from (date_time-1)'s 9am to date_time's 9pm is regarded as the precipitation of the date_time. Example are followed: the following files are used to calculate the precipitation of 1990/01/31
+          filename                                 subscript times
+    accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900130T0600Z.sub.nc          4-6
     accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900130T1200Z.sub.nc          1-6
-    accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900130T1800Z.sub.nc           1-6
+    accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900130T1800Z.sub.nc          1-6
     accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900131T0000Z.sub.nc          1-6
-    accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900131T0600Z.sub.nc           1-3
+    accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900131T0600Z.sub.nc          1-3
     """
     shape=(768,1200)
     
@@ -221,7 +239,7 @@ def map_aust(data, lat=None, lon=None,domain = [111.85, 156.275, -44.35, -9.975]
     return da,llats,llons
 
 
-def draw_aus(data, domain = [111.85, 155.875, -44.35, -9.975], level="day" ,titles_on = True, title = "BARRA-R precipitation", colormap = prcp_colormap, cmap_label = "Precipitation (mm)",save=False,path=""):
+def draw_aus_old(data, domain = [111.85, 155.875, -44.35, -9.975], level="day" ,titles_on = True, title = "BARRA-R precipitation", colormap = prcp_colormap, cmap_label = "Precipitation (mm)",save=False,path=""):
     """ basema_ploting .py
 This function takes a 2D data set of a variable from BARRA and maps the data on miller projection. 
 The map default span is longitude between 135E and 155E, and the span for latitudes is -45 to -30, this is SE Australia. 
@@ -268,6 +286,53 @@ From the BARRA average netCDF, the mean prcp should be multiplied by 24*365
     return
 
 
+def map_aust(data, lat=None, lon=None,data_name="pr",domain = [111.85, 156.275, -44.35, -9.975],xrarray=True):
+    '''
+    domain=[111.975, 156.275, -44.525, -9.975]
+    domain = [111.85, 156.275, -44.35, -9.975]for can be divide by 4
+    '''
+    if data_name=="pr":
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>":
+            da=data.data
+            lat=data.lat.data
+            lon=data.lon.data
+        else:
+            da=data
+
+    #     if domain==None:
+    #         domain = [111.85, 156.275, -44.35, -9.975]
+        a = np.logical_and(lon>=domain[0], lon<=domain[1])
+        b = np.logical_and(lat>=domain[2], lat<=domain[3])
+        da=da[b,:][:,a].copy()
+        llons, llats=lon[a], lat[b] # 将维度按照 x,y 横向竖向
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>" and xrarray:
+            return xr.DataArray(da,coords=[llats,llons],dims=["lat","lon"])
+        else:
+            return da
+
+
+        return da,llats,llons
+    else:
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>":
+            da=data.data
+            level=data.level
+            lat=data.lat.data
+            lon=data.lon.data
+        else:
+            da=data
+        a = np.logical_and(lon>=domain[0], lon<=domain[1])
+        b = np.logical_and(lat>=domain[2], lat<=domain[3])
+        da=da[:,b][:,:,a].copy()
+        llons, llats=lon[a], lat[b] # 将维度按照 x,y 横向竖向
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>" and xrarray:
+            return xr.DataArray(da,coords=[level,llats,llons],dims=["level","lat","lon"])
+        else:
+            return da
+
+
+        return da,llats,llons
+
+
 
 def interp_dim_scale(x, scale,linspace=True):
     '''get the corresponding lat and lon'''
@@ -287,6 +352,18 @@ def interp_tensor_2d(X, size, fill=True):
         X[np.isnan(X)]=0
     scaled_tensor = cv2.resize(X, (size[1], size[0]),interpolation=cv2.INTER_CUBIC)
     return scaled_tensor
+
+def interp_tensor_3d(X, size, fill=True):
+    """
+    hypothesis:
+     dimensions is level,lat,lon(special design for zg)
+    """
+    if fill:
+        X[np.isnan(X)]=0# if there is an exeption, ensure that x is numpy not xrarray
+        
+    print(np.swapaxes(X,2,0).shape)
+    scaled_tensor = cv2.resize(np.swapaxes(X,2,0), (size[0], size[1]),interpolation=cv2.INTER_CUBIC)
+    return np.swapaxes(scaled_tensor,1,0)
 
 def interp_da_2d_scale(da, scale):
     '''

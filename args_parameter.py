@@ -18,9 +18,32 @@ def set_parser():
                         help='random seed')
 
     # Data specifications
+    parser.add_argument('--pr', type=bool, 
+                    default=True,
+                    help='add-on pr?')     
+    parser.add_argument('--psl', type=bool, 
+                    default=False,
+                    help='add-on psl?') 
+    parser.add_argument('--zg', type=bool, 
+                    default=False,
+                    help='add-on zg?') 
+    parser.add_argument('--tasmax', type=bool, 
+                    default=False,
+                    help='add-on tasmax?') 
+    parser.add_argument('--tasmin', type=bool, 
+                    default=False,
+                    help='add-on tasmin?')    
+    
+    
+    
+    parser.add_argument('--ensemble', type=int, 
+                    default=2,
+                    help='total ensambles is 11') 
+
+    
     parser.add_argument('--channels', type=float, 
-                        default=1,
-                        help='channel of data_input') 
+                        default=0,
+                        help='channel of data_input must') 
     
     parser.add_argument('--domain', type=list, 
                         default=[111.85, 155.875, -44.35, -9.975],
