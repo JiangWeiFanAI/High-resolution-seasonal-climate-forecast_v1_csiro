@@ -12,7 +12,7 @@ def set_parser():
                         help='number of threads for data loading')
     parser.add_argument('--cpu', action='store_true',
                         help='use cpu only')
-    parser.add_argument('--n_GPUs', type=int, default=2,
+    parser.add_argument('--n_GPUs', type=int, default=1,
                         help='number of GPUs')
     parser.add_argument('--seed', type=int, default=1,
                         help='random seed')
@@ -32,7 +32,12 @@ def set_parser():
                     help='add-on tasmax?') 
     parser.add_argument('--tasmin', type=bool, 
                     default=False,
-                    help='add-on tasmin?')    
+                    help='add-on tasmin?')
+    
+    parser.add_argument('--leading_time_we_use', type=int, 
+                    default=7,
+                    help='add-on tasmin?')
+    
     
     
     

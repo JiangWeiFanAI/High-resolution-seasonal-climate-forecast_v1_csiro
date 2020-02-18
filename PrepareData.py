@@ -16,10 +16,10 @@ import xarray as xr
 # file_ACCESS_dir="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
 # file_BARRA_dir="/g/data/ma05/BARRA_R/analysis/acum_proc"
 
-ensemble_access=['e01','e02','e03','e04','e05','e06','e07','e08','e09','e10','e11']
-ensemble=[]
-for i in range(args.ensemble):
-    ensemble.append(ensemble_access[i])
+# ensemble_access=['e01','e02','e03','e04','e05','e06','e07','e08','e09','e10','e11']
+# ensemble=[]
+# for i in range(args.ensemble):
+#     ensemble.append(ensemble_access[i])
     
 # ensemble=['e01','e02','e03','e04','e05','e06','e07','e08','e09','e10','e11']
 
@@ -145,7 +145,7 @@ class ACCESS_BARRA_v1(Dataset):
         label=dpt.map_aust(data_high,domain=args.domain,xrarray=False)#,domain=domain)
         lr=dpt.interp_tensor_2d(lr_raw,(78,100))
         if self.transform:
-            return self.transform( np.expand_dims(lr,axis=3)*86400),self.transform(np.expand_dims(label,axis=3)),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
+            return self.transform( lr*86400),self.transform(label),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
         else:
             return np.expand_dims(lr,axis=3)*86400,np.expand_dims(label,axis=3),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
 #         return np.reshape(train_data,(78,100,1))*86400,np.reshape(label,(312,400,1))
@@ -161,6 +161,8 @@ class ACCESS_BARRA_v2(Dataset):
    
     '''
     def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=args):
+        print("=> BARRA_R & ACCESS_S1 loading")
+        print("=> from "+start_date.strftime("%Y/%m/%d")+" to "+end_date.strftime("%Y/%m/%d")+"")
         self.file_BARRA_dir = args.file_BARRA_dir
         self.file_ACCESS_dir = args.file_ACCESS_dir
         
@@ -171,25 +173,29 @@ class ACCESS_BARRA_v2(Dataset):
         self.scale = args.scale[0]
         self.regin = regin
         self.leading_time=217
-        self.leading_time_we_use=7
+        self.leading_time_we_use=args.leading_time_we_use
 
-        
-#         if regin=="AUS":
-#             self.shape=(314,403,1,1)
-#             self.domain=[111.975, 156.275, -44.525, -9.975]
-#         else:
-#             self.shape=(768,1200,1,1)
+        self.ensemble_access=['e01','e02','e03','e04','e05','e06','e07','e08','e09','e10','e11']
+        self.ensemble=[]
+        for i in range(args.ensemble):
+            self.ensemble.append(self.ensemble_access[i])
                 
         self.dates = self.date_range(start_date, end_date)
         
         
         self.filename_list=self.get_filename_with_time_order(args.file_ACCESS_dir+"pr/daily/")
-        _,date_for_BARRA,time_leading=self.filename_list[0]
+        _,_,date_for_BARRA,time_leading=self.filename_list[0]
 
         data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=True)
         data_exp=dpt.map_aust(data_high,domain=args.domain,xrarray=True)#,domain=domain)
         self.lat=data_exp["lat"]
-        self.lon=data_exp["lon"]        
+        self.lon=data_exp["lon"]
+        
+#         print("Dataset statistics:")
+#         print("  ------------------------------")
+#         print("  total | %5d"%len(self.filename_list))
+
+#         print("  ------------------------------")
         
     def __len__(self):
         return len(self.filename_list)
@@ -217,13 +223,17 @@ class ACCESS_BARRA_v2(Dataset):
     def get_filename_with_time_order(self,rootdir):
         '''get filename first and generate label ,one different w'''
         _files = []
-        for en in ensemble:
+        for en in self.ensemble:
             for date in self.dates:
+                
+                    
                 
                 filename="da_pr_"+date.strftime("%Y%m%d")+"_"+en+".nc"
                 access_path=rootdir+en+"/"+"da_pr_"+date.strftime("%Y%m%d")+"_"+en+".nc"
                 if os.path.exists(access_path):
                     for i in range(self.leading_time_we_use):
+                        if date==self.end_date and i==1:
+                            break
                         path=[access_path]
                         barra_date=date+timedelta(i)
                         path.append(date)
@@ -232,7 +242,6 @@ class ACCESS_BARRA_v2(Dataset):
                         _files.append(path)
     
     #最后去掉第一行，然后shuffle
-        print(len(_files))
         if args.nine2nine and args.date_minus_one==1:
             del _files[0]
         return _files
@@ -245,6 +254,7 @@ class ACCESS_BARRA_v2(Dataset):
         from filename idx get id
         return lr,hr
         '''
+        
         #read_data filemame[idx]
         access_filename_pr,access_date,date_for_BARRA,time_leading=self.filename_list[idx]
 #         print(type(date_for_BARRA))
@@ -261,21 +271,33 @@ class ACCESS_BARRA_v2(Dataset):
         lr=dpt.interp_tensor_2d(lr_raw,(78,100))
         
         if args.zg:
-            access_filename_zg=file_ACCESS_dir+en+"/"+"da_zg_"+date.strftime("%Y%m%d")+"_"+en+".nc"
-            data_zg=dpt.read_access_zg(access_filename,idx=time_leading)
-            data_zg_aus=map_aust(data_zg,data_name="zg",xrarray=False)
+            access_filename_zg=args.file_ACCESS_dir+"zg/daily/"+en+"/"+"da_zg_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+            data_zg=dpt.read_access_zg(access_filename_zg,idx=time_leading)
+            data_zg_aus=map_aust(data_zg,xrarray=False)
             lr_zg=dpt.interp_tensor_3d(data_zg_aus,(78,100))
-            !
-#         if args.zg==True:!
-#             access_filename_zg=file_ACCESS_dir+en+"/"+"da_zg_"+date.strftime("%Y%m%d")+"_"+en+".nc"
-#             data_zg=dpt.read_access_zg(access_filename,idx=time_leading)
-#             data_zg_aus=map_aust(data_zg,data_name="zg",xrarray=False)
-#             lr_zg=dpt.interp_tensor_3d(data_zg_aus,(78,100))
+        
+        if args.psl:
+            access_filename_psl=args.file_ACCESS_dir+"psl/daily/"+en+"/"+"da_psl_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+            data_psl=dpt.read_access_data(access_filename_psl,idx=time_leading)
+            data_psl_aus=map_aust(data_psl,xrarray=False)
+            lr_psl=dpt.interp_tensor_2d(data_psl_aus,(78,100))
+        if args.tasmax:
+            access_filename_tasmax=args.file_ACCESS_dir+"tasmax/daily/"+en+"/"+"da_tasmax_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+            data_tasmax=dpt.read_access_data(access_filename_tasmax,idx=time_leading)
+            data_tasmax_aus=map_aust(data_tasmax,xrarray=False)
+            lr_tasmax=dpt.interp_tensor_2d(data_tasmax_aus,(78,100))
+            
+        if args.tasmax:
+            access_filename_tasmin=args.file_ACCESS_dir+"tasmin/daily/"+en+"/"+"da_tasmin_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+            data_tasmin=dpt.read_access_data(access_filename_tasmin,idx=time_leading)
+            data_tasmin_aus=map_aust(data_tasmin,xrarray=False)
+            lr_tasmin=dpt.interp_tensor_2d(data_tasmin_aus,(78,100)) 
+            
             
         if self.transform:#channel 数量需要整理！！
-            return self.transform( np.expand_dims(lr,axis=3)*86400),self.transform(np.expand_dims(label,axis=3)),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
+            return self.transform(lr*86400),self.transform(label),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
         else:
-            return np.expand_dims(lr,axis=3)*86400,np.expand_dims(label,axis=3),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
+            return lr*86400,label,torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
 #         return np.reshape(train_data,(78,100,1))*86400,np.reshape(label,(312,400,1))
 
 
