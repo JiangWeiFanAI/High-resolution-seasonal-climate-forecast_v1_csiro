@@ -185,7 +185,8 @@ def read_barra_data_fc(root_dir,date_time,nine2nine=True,date_minus_one=1):#args
                 filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
                 dataset=Dataset(filename)
                 daily+=np.sum(dataset["accum_prcp"][:],axis=0)
-#             print(date_we_use)
+            dataset.close()
+
 
 
         return xr.DataArray(daily,coords=[lats,lons],dims=["lat","lon"])
