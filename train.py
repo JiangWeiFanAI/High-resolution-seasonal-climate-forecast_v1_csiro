@@ -2,7 +2,7 @@ import os
 import data_processing_tool as dpt
 from datetime import timedelta, date, datetime
 from args_parameter import args
-from PrepareData import ACCESS_v1
+from PrepareData import ACCESS_BARRA_v1,ACCESS_BARRA_v2
 
 import torch,os,torchvision
 import torch.nn as nn
@@ -23,23 +23,48 @@ import utility
 from tqdm import tqdm
 import math
 import xarray as xr
+from skimage.measure import compare_ssim
+from skimage.measure import compare_psnr,compare_mse
 
-args.file_ACCESS_dir="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
+args.file_ACCESS_dir_pr="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
+args.file_ACCESS_dir="/g/data/ub7/access-s1/hc/raw_model/atmos/"
+# training_name="temp01"
 args.file_BARRA_dir="/g/data/ma05/BARRA_R/v1/forecast/spec/accum_prcp/"
-
-ensemble=['e01','e02','e03','e04','e05','e06','e07','e08','e09','e10','e11']
+args.channels=0
+if args.pr:
+    args.channels+=1
+if args.zg:
+    args.channels+=1
+if args.psl:
+    args.channels+=1
+if args.tasmax:
+    args.channels+=1
+if args.tasmin:
+    args.channels+=1
 access_rgb_mean= 2.9067910245780248e-05*86400
 
 leading_time=217
-leading_time_we_use=31
-
+args.leading_time_we_use=7
+args.ensemble=2
 
 init_date=date(1970, 1, 1)
 start_date=date(1990, 1, 2)
-end_date=date(2018,12,31) #if 929 is true we should substract 1 day
+end_date=date(2012,12,25) #if 929 is true we should substract 1 day
 dates=[start_date + timedelta(x) for x in range((end_date - start_date).days + 1)]
 print(access_rgb_mean)
-###############################################################################
+
+print("training statistics:")
+print("  ------------------------------")
+print("  trainning name  |  %s"%args.train_name)
+print("  ------------------------------")
+print("  num of channels | %5d"%args.channels)
+print("  ------------------------------")
+print("  num of threads  | %5d"%args.n_threads)
+print("  ------------------------------")
+print("  batch_size      | %5d"%args.batch_size)
+
+############################################################################################
+
 train_transforms = transforms.Compose([
 #     transforms.Resize(IMG_SIZE),
 #     transforms.RandomResizedCrop(IMG_SIZE),
@@ -49,20 +74,28 @@ train_transforms = transforms.Compose([
 #     transforms.Normalize(IMG_MEAN, IMG_STD)
 ])
 
-data_set=ACCESS_BARRA_v1(start_date,end_date,transform=train_transforms)
-train_data,test_data=random_split(data_set,[int(len(data_set)*0.8),len(data_set)-int(len(data_set)*0.8)])
-len(train_data)
+data_set=ACCESS_BARRA_v2(start_date,end_date,transform=train_transforms,args=args)
+train_data,val_data=random_split(data_set,[int(len(data_set)*0.8),len(data_set)-int(len(data_set)*0.8)])
+
+
+print("Dataset statistics:")
+print("  ------------------------------")
+print("  total | %5d"%len(data_set))
+print("  ------------------------------")
+print("  train | %5d"%len(train_data))
+print("  ------------------------------")
+print("  val   | %5d"%len(val_data))
+
+###################################################################################set a the dataLoader
 train_dataloders =DataLoader(train_data,
-                                        batch_size=8,
-                                        shuffle=False)
-test_dataloders =DataLoader(test_data,
-                                        batch_size=8,
-                                        shuffle=False)
-
-
-
-# args.pre_train ="C:/Users/JIA059/climate_v1_csiro/High-resolution-seasonal-climate-forecast_v1_csiro/model/RCAN_BIX"+str(args.scale[0])+".pt"
-# "C:/Users/JIA059/climate_v1_csiro/High-resolution-seasonal-climate-forecast_v1_csiro/model"
+                                        batch_size=args.batch_size,
+                                        shuffle=False,
+                            num_workers=args.n_threads)
+val_dataloders =DataLoader(val_data,
+                                        batch_size=args.batch_size,
+                                        shuffle=False,
+                          num_workers=args.n_threads)
+##
 def prepare( l, volatile=False):
     device = torch.device('cpu' if args.cpu else 'cuda')
     def _prepare(tensor):
@@ -73,41 +106,62 @@ def prepare( l, volatile=False):
 
 checkpoint = utility.checkpoint(args)
 net = model.Model(args, checkpoint).double()
-
+args.lr=0.001
 criterion = nn.L1Loss()
-optimizer_my = optim.SGD(net.parameters(), lr=0.00001, momentum=0.9)
+optimizer_my = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
+# scheduler = optim.lr_scheduler.StepLR(optimizer_my, step_size=7, gamma=0.1)
+scheduler = optim.lr_scheduler.ExponentialLR(optimizer_my, gamma=0.9)
+# torch.optim.lr_scheduler.MultiStepLR(optimizer_my, milestones=[20,80], gamma=0.1)
 
 
 
+##########################################################################training
 #training
-training_name="temp01"
 
-max_error=10000
+
+max_error=np.inf
 for e in range(args.epochs):
+    #train
+    net.train()
+    loss=0
     start=time.time()
-    if e % 10 == 0:
-        for p in optimizer_my.param_groups:
-            p['lr'] *= 0.9
-
     for batch, (lr, hr,_,_) in enumerate(train_dataloders):
-    #     print(batch, (lr.size(), hr.size()))
         lr, hr = prepare([lr, hr])
         optimizer_my.zero_grad()
-        sr = net(lr, 0)
-        error = criterion(sr[:,:,:,0:403], hr)
-        if error<max_error:
-            max_error=error
-#             torch.save(net,"C:/Users/JIA059/climate_v1_csiro/High-resolution-seasonal-climate-forecast_v1_csiro/model"+str(e)+".pkl")
-            if not os.path.exists("./model/save/temp01/"):
-                os.mkdir("./model/save/temp01/")
-            torch.save(net,"./model/save/"+training_name+"/"+str(e)+".pkl")
-
-        error.backward()
+        with torch.set_grad_enabled(True):
+            sr = net(lr, 0)
+#         error = criterion(sr[:,:,:,0:403], hr)
+            running_loss =criterion(sr, hr)
+            loss+=running_loss #.copy()?
+        running_loss.backward()
         optimizer_my.step()
-        break
-#     print("epoche: %d,time cost %f s, lr: %f, error: %f"%(e,time.time()-start,optimizer_my.state_dict()['param_groups'][0]['lr'],error.item()))
         
-    break
+    #validation
+    net.eval()
+    start=time.time()
+    with torch.no_grad():
+        eval_psnr=0
+        eval_ssim=0
+        tqdm_val = tqdm(val_dataloders, ncols=80)
+        for idx_img, (lr, hr,date,_) in enumerate(tqdm_val):
+            lr, hr = prepare([lr, hr])
+            sr = net(lr, 0)
+            val_loss=criterion(sr, hr)
+            for ssr,hhr in zip(sr,hr):
+                eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+                eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )      
+    print("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+              e,
+              time.time()-start,
+              optimizer_my.state_dict()['param_groups'][0]['lr'],
+              loss.item()/len(train_data),
+              val_loss
+         ))
+    if running_loss<max_error:
+        max_error=running_loss
+#         torch.save(net,train_loss"_"+str(e)+".pkl")
+        if not os.path.exists("./model/save/"+args.train_name+"/"):
+            os.mkdir("./model/save/"+args.train_name+"/")
+        torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
     
-
 

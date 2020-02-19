@@ -2,7 +2,6 @@ import os
 import data_processing_tool as dpt
 from datetime import timedelta, date, datetime
 # import args_parameter as args
-from args_parameter import args
 import torch,torchvision
 import numpy as np
 
@@ -36,12 +35,15 @@ import xarray as xr
 
 # domain = [111.975, 156.275, -44.525, -9.975]
 
+
 class ACCESS_BARRA_v1(Dataset):
     '''
     scale is size(hr)=size(lr)*scale
     version_1_documention: the data we use is raw data that store at NCI
     '''
-    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=args):
+    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=None):
+        if args is None:
+            exit(0)
         self.file_BARRA_dir = args.file_BARRA_dir
         self.file_ACCESS_dir = args.file_ACCESS_dir
         
@@ -160,11 +162,12 @@ class ACCESS_BARRA_v2(Dataset):
     2. in ver.2, I add extend the demention of the input data ,using zg etc.
    
     '''
-    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=args):
+    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=None):
         print("=> BARRA_R & ACCESS_S1 loading")
         print("=> from "+start_date.strftime("%Y/%m/%d")+" to "+end_date.strftime("%Y/%m/%d")+"")
         self.file_BARRA_dir = args.file_BARRA_dir
         self.file_ACCESS_dir = args.file_ACCESS_dir
+        self.args=args
         
         self.transform = transform
         self.start_date = start_date
@@ -184,8 +187,15 @@ class ACCESS_BARRA_v2(Dataset):
         
         
         self.filename_list=self.get_filename_with_time_order(args.file_ACCESS_dir+"pr/daily/")
+        if not os.path.exists(args.file_ACCESS_dir+"pr/daily/"):
+            print(args.file_ACCESS_dir+"pr/daily/")
+            print("no file or no permission")
+        
+        
         _,_,date_for_BARRA,time_leading=self.filename_list[0]
-
+        if not os.path.exists("/g/data/ma05/BARRA_R/v1/forecast/spec/accum_prcp/1990/01/accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900109T0600Z.sub.nc"):
+            print(self.file_BARRA_dir)
+            print("no file or no permission!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=True)
         data_exp=dpt.map_aust(data_high,domain=args.domain,xrarray=True)#,domain=domain)
         self.lat=data_exp["lat"]
@@ -242,7 +252,7 @@ class ACCESS_BARRA_v2(Dataset):
                         _files.append(path)
     
     #最后去掉第一行，然后shuffle
-        if args.nine2nine and args.date_minus_one==1:
+        if self.args.nine2nine and self.args.date_minus_one==1:
             del _files[0]
         return _files
 
@@ -254,46 +264,48 @@ class ACCESS_BARRA_v2(Dataset):
         from filename idx get id
         return lr,hr
         '''
-        
+        t=time.time()
+
         #read_data filemame[idx]
         access_filename_pr,access_date,date_for_BARRA,time_leading=self.filename_list[idx]
 #         print(type(date_for_BARRA))
 #         low_filename,high_filename,time_leading=self.filename_list[idx]
 
         data_low=dpt.read_access_data(access_filename_pr,idx=time_leading)
-        lr_raw=dpt.map_aust(data_low,domain=args.domain,xrarray=False)
+        lr_raw=dpt.map_aust(data_low,domain=self.args.domain,xrarray=False)
         
 #         domain = [train_data.lon.data.min(), train_data.lon.data.max(), train_data.lat.data.min(), train_data.lat.data.max()]
 #         print(domain)
 
         data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=True)
-        label=dpt.map_aust(data_high,domain=args.domain,xrarray=False)#,domain=domain)
+        label=dpt.map_aust(data_high,domain=self.args.domain,xrarray=False)#,domain=domain)
         lr=dpt.interp_tensor_2d(lr_raw,(78,100))
         
-        if args.zg:
-            access_filename_zg=args.file_ACCESS_dir+"zg/daily/"+en+"/"+"da_zg_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+        if self.args.zg:
+            access_filename_zg=self.args.file_ACCESS_dir+"zg/daily/"+en+"/"+"da_zg_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_zg=dpt.read_access_zg(access_filename_zg,idx=time_leading)
             data_zg_aus=map_aust(data_zg,xrarray=False)
             lr_zg=dpt.interp_tensor_3d(data_zg_aus,(78,100))
         
-        if args.psl:
-            access_filename_psl=args.file_ACCESS_dir+"psl/daily/"+en+"/"+"da_psl_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+        if self.args.psl:
+            access_filename_psl=self.args.file_ACCESS_dir+"psl/daily/"+en+"/"+"da_psl_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_psl=dpt.read_access_data(access_filename_psl,idx=time_leading)
             data_psl_aus=map_aust(data_psl,xrarray=False)
             lr_psl=dpt.interp_tensor_2d(data_psl_aus,(78,100))
-        if args.tasmax:
-            access_filename_tasmax=args.file_ACCESS_dir+"tasmax/daily/"+en+"/"+"da_tasmax_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+        if self.args.tasmax:
+            access_filename_tasmax=self.args.file_ACCESS_dir+"tasmax/daily/"+en+"/"+"da_tasmax_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_tasmax=dpt.read_access_data(access_filename_tasmax,idx=time_leading)
             data_tasmax_aus=map_aust(data_tasmax,xrarray=False)
             lr_tasmax=dpt.interp_tensor_2d(data_tasmax_aus,(78,100))
             
-        if args.tasmax:
-            access_filename_tasmin=args.file_ACCESS_dir+"tasmin/daily/"+en+"/"+"da_tasmin_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
+        if self.args.tasmax:
+            access_filename_tasmin=self.args.file_ACCESS_dir+"tasmin/daily/"+en+"/"+"da_tasmin_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_tasmin=dpt.read_access_data(access_filename_tasmin,idx=time_leading)
             data_tasmin_aus=map_aust(data_tasmin,xrarray=False)
             lr_tasmin=dpt.interp_tensor_2d(data_tasmin_aus,(78,100)) 
             
-            
+        print("end loading one data,time cost %f"%(time.time()-t))
+
         if self.transform:#channel 数量需要整理！！
             return self.transform(lr*86400),self.transform(label),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
         else:
@@ -310,7 +322,7 @@ class ACCESS_v1(Dataset):
     scale is size(hr)=size(lr)*scale
     version_1_documention: the data we use is raw data that store at NCI
     '''
-    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=args):
+    def __init__(self,start_date=date(1990, 1, 1),end_date=date(1990,12 , 31),regin="AUS",transform=None,train=True,args=None):
         self.file_BARRA_dir = args.file_BARRA_dir
         self.file_ACCESS_dir = args.file_ACCESS_dir
         
