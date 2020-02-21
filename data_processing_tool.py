@@ -25,7 +25,7 @@ levels["day"]   = [0., 0.2,  5, 10,  20,  30,  40,  60,  100,  150,  200,  300]
 levels["week"]  = [0., 0.2,  10,  20,  30,  50, 100,  150,  200,  300,  500, 1000]
 levels["month"] = [0.,  10,  20,  30,  40,  50, 100,  200,  300,  500, 1000, 1500]
 levels["year"]  = [0.,  50, 100, 200, 300, 400, 600, 1000, 1500, 2000, 3000, 5000]
-
+enum={0:"0600",1:"1200",2:"1800",3:"0000",4:"0600"}
 
 
 prcp_colours_0 = [
@@ -139,6 +139,18 @@ def read_barra_data_an(root_dir,date_time,nine2nine=False):
         return xr.DataArray(daily,coords=[lats,lons],dims=["lat","lon"])
 
 
+
+def get_file(root_dir,date_we_use,i):
+    """
+    some file name do not have v1, but they do have v1.1
+    like :accum_prcp-fc-spec-PT1H-BARRA_R-v1.1-20100120T1800Z.sub.nc
+    """
+    filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
+    if not os.path.exists(filename):
+        filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1.1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
+    return filename
+
+
 def read_barra_data_fc(root_dir,date_time,nine2nine=True,date_minus_one=1):#argse
     """
     How to use: 
@@ -163,13 +175,14 @@ def read_barra_data_fc(root_dir,date_time,nine2nine=True,date_minus_one=1):#args
         for i in range(5):
             if i==0:
                 date_we_use=date_time-timedelta(date_minus_one)
-                filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
+                filename=get_file(root_dir,date_we_use,i)
+                
                 dataset=Dataset(filename)
                 daily+=np.sum(dataset["accum_prcp"][3:6],axis=0)
 #                 print(var.shape)
             elif i==4:
                 date_we_use=date_time-timedelta(date_minus_one-1)
-                filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
+                filename=get_file(root_dir,date_we_use,i)
                 dataset=Dataset(filename)
                 daily+=np.sum(dataset["accum_prcp"][0:3],axis=0)
                 lats=dataset["latitude"][:]
@@ -177,12 +190,12 @@ def read_barra_data_fc(root_dir,date_time,nine2nine=True,date_minus_one=1):#args
 #                 print(dataset["accum_prcp"][0:3].shape)
             elif i==3:
                 date_we_use=date_time-timedelta(date_minus_one-1)
-                filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
+                filename=get_file(root_dir,date_we_use,i)
                 dataset=Dataset(filename)
                 daily+=np.sum(dataset["accum_prcp"][:],axis=0)       
             else:
                 date_we_use=date_time-timedelta(date_minus_one)
-                filename=root_dir+date_we_use.strftime("%Y/%m/")+"accum_prcp-fc-spec-PT1H-BARRA_R-v1-"+date_we_use.strftime("%Y%m%d")+"T"+enum[i]+"Z.sub.nc"
+                filename=get_file(root_dir,date_we_use,i)
                 dataset=Dataset(filename)
                 daily+=np.sum(dataset["accum_prcp"][:],axis=0)
             dataset.close()

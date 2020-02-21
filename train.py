@@ -61,7 +61,9 @@ print("  num of channels | %5d"%args.channels)
 print("  ------------------------------")
 print("  num of threads  | %5d"%args.n_threads)
 print("  ------------------------------")
-print("  batch_size      | %5d"%args.batch_size)
+print("  batch_size     | %5d"%args.batch_size)
+print("  ------------------------------")
+print("  using cpu only？ | %5d"%args.cpu)
 
 ############################################################################################
 
