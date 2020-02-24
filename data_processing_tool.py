@@ -220,7 +220,15 @@ def read_barra_data_fc(root_dir,date_time,nine2nine=True,date_minus_one=1):#args
     
 
 
-
+def read_dem(filename):
+    tif = TIFF.open(filename,mode='r')
+    stack = []
+    for img in list(tif.iter_images()):
+        stack.append(img)
+        
+    dem_np=np.array(stack)
+    dem_np=dem_np.transpose(1,2,0)
+    return dem_np
 
 
 

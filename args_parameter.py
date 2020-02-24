@@ -21,7 +21,11 @@ parser.add_argument('--seed', type=int, default=1,
 # Data specifications
 parser.add_argument('--pr', type=bool, 
                 default=True,
-                help='add-on pr?')     
+                help='add-on pr?')
+
+parser.add_argument('--dem', type=bool, 
+                default=True,
+                help='add-on dem?') 
 parser.add_argument('--psl', type=bool, 
                 default=False,
                 help='add-on psl?') 
@@ -52,7 +56,7 @@ parser.add_argument('--channels', type=float,
                     help='channel of data_input must') 
 
 parser.add_argument('--domain', type=list, 
-                    default=[111.85, 155.875, -44.35, -9.975],
+                    default=[112.9, 154.00, -43.7425, -9.0],
                     help='dataset directory')    
 
 
@@ -63,6 +67,11 @@ parser.add_argument('--file_ACCESS_dir', type=str,
 parser.add_argument('--file_BARRA_dir', type=str, 
                     default="C:/Users/JIA059/barra/",
                     help='dataset directory')
+
+parser.add_argument('--file_DEM_dir', type=str, 
+                    default="./DEM/",
+                    help='dataset directory')
+
 parser.add_argument('--nine2nine', type=bool, 
                     default=True,
                     help='whether rainfall acculate from 9am to 9am')
@@ -221,9 +230,6 @@ for arg in vars(args):
         vars(args)[arg] = True
     elif vars(args)[arg] == 'False':
         vars(args)[arg] = False
-
-
-
 
 
 

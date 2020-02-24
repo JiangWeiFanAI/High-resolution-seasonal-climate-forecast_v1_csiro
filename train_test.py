@@ -17,7 +17,6 @@ import torch.optim as optim
 
 # from PIL import Image
 import time
-from sklearn.model_selection import StratifiedShuffleSplit
 import model
 import utility
 from tqdm import tqdm
@@ -26,10 +25,28 @@ import xarray as xr
 from skimage.measure import compare_ssim
 from skimage.measure import compare_psnr,compare_mse
 
-args.file_ACCESS_dir_pr="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
-args.file_ACCESS_dir="/g/data/ub7/access-s1/hc/raw_model/atmos/"
-# training_name="temp01"
-args.file_BARRA_dir="/g/data/ma05/BARRA_R/v1/forecast/spec/accum_prcp/"
+import platform 
+sys = platform.system()
+
+
+init_date=date(1970, 1, 1)
+start_date=date(1990, 1, 2)
+end_date=date(2012,12,25)
+
+if sys == "Windows":
+    args.file_ACCESS_dir="H:/climate/access-s1/"
+    args.file_BARRA_dir="D:/dataset/accum_prcp/"
+    init_date=date(1970, 1, 1)
+    start_date=date(1990, 1, 2)
+    end_date=date(1990,12,25)
+else:
+    args.file_ACCESS_dir_pr="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
+    args.file_ACCESS_dir="/g/data/ub7/access-s1/hc/raw_model/atmos/"
+    # training_name="temp01"
+    args.file_BARRA_dir="/g/data/ma05/BARRA_R/v1/forecast/spec/accum_prcp/"
+
+
+
 args.channels=0
 if args.pr:
     args.channels+=1
@@ -46,12 +63,6 @@ access_rgb_mean= 2.9067910245780248e-05*86400
 leading_time=217
 args.leading_time_we_use=7
 args.ensemble=2
-
-init_date=date(1970, 1, 1)
-start_date=date(1990, 1, 2)
-end_date=date(2012,12,25) #if 929 is true we should substract 1 day
-dates=[start_date + timedelta(x) for x in range((end_date - start_date).days + 1)]
-
 
 
 ############################################################################################
@@ -121,7 +132,6 @@ print("  using cpu only？ | %5d"%args.cpu)
 
 
 
-
 max_error=np.inf
 # train_loss=
 # print("batch size %d"%args.batch_size)
@@ -183,7 +193,7 @@ for e in range(args.epochs):
             os.mkdir("./model/save/"+args.train_name+"/")
 #         torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
         print("end Training for %d"%e)
-
+        
 
 
 
