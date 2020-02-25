@@ -3,11 +3,13 @@
 #PBS -q gpuvolta
 #PBS -l ngpus=1
 #PBS -l ncpus=12
-#PBS -l walltime=20:00:00
+#PBS -l mem=8GB
+#PBS -l jobfs=1GB
+#PBS -l walltime=00:05:00
+#PBS -l storage=gdata/ub7+gdata/ma05
 #PBS -l wd
-#PBS-l storage=gdata/ma05+gdata/ub7
 
 module load python3/3.7.4
 
-python3  --n_thread 0 --batch_size 4
+python3 train_test.py --n_threads 0 --batch_size 4
 

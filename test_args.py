@@ -66,5 +66,14 @@ args.ensemble=2
 
 
 
-print(args.args_test)
-print(args.n_threads)
+print("training statistics:")
+print("  ------------------------------")
+print("  trainning name  |  %s"%args.train_name)
+print("  ------------------------------")
+print("  num of channels | %5d"%args.channels)
+print("  ------------------------------")
+print("  num of threads  | %5d"%args.n_threads)
+print("  ------------------------------")
+print("  batch_size     | %5d"%args.batch_size)
+print("  ------------------------------")
+print("  using cpu only？ | %5d"%args.cpu)

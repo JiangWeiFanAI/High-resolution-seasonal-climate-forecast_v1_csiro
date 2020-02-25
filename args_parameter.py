@@ -209,13 +209,16 @@ parser.add_argument('--testset', type=str, default='Set5',
                     help='dataset name for testing')
 parser.add_argument('--degradation', type=str, default='BI',
                     help='degradation model: BI, BD')
+args = parser.parse_args()
 
-import platform 
-sys = platform.system()
-if sys == "Windows":
-    args = parser.parse_args(args=[])
-else:
-    args = parser.parse_args()
+# import platform 
+# sys = platform.system()
+# if sys == "Windows":
+#     args = parser.parse_args(args=[])
+# else:
+#     args = parser.parse_args()
+
+# args = parser.parse_args()
 
 
 #     template.set_template(args)

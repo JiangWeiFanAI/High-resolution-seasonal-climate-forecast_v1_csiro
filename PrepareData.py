@@ -435,7 +435,7 @@ class ACCESS_BARRA_v2(Dataset):
         from filename idx get id
         return lr,hr
         '''
-        t=time.time()
+#         t=time.time()
         
         #read_data filemame[idx]
         access_filename_pr,access_date,date_for_BARRA,time_leading=self.filename_list[idx]
@@ -476,7 +476,7 @@ class ACCESS_BARRA_v2(Dataset):
             lr_tasmin=dpt.interp_tensor_2d(data_tasmin_aus,(78,100))
             
             
-        print("end loading one data,time cost %f"%(time.time()-t))
+#         print("end loading one data,time cost %f"%(time.time()-t))
 
         if self.transform:#channel 数量需要整理！！
             return self.transform(lr*86400),self.transform(label),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
