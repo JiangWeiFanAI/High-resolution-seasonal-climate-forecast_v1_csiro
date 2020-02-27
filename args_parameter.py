@@ -9,7 +9,7 @@ parser.add_argument('--template', default='.',
                     help='You can set various templates in option.py')
 
 # Hardware specifications
-parser.add_argument('--n_threads', type=int, default=8,
+parser.add_argument('--n_threads', type=int, default=0,
                     help='number of threads for data loading')
 parser.add_argument('--cpu', action='store_true',
                     help='use cpu only')
@@ -54,9 +54,9 @@ parser.add_argument('--ensemble', type=int,
 parser.add_argument('--channels', type=float, 
                     default=0,
                     help='channel of data_input must') 
-
+#[111.85, 155.875, -44.35, -9.975]
 parser.add_argument('--domain', type=list, 
-                    default=[112.9, 154.00, -43.7425, -9.0],
+                    default=[112.9, 154.25, -43.7425, -9.0],
                     help='dataset directory')    
 
 
@@ -69,7 +69,7 @@ parser.add_argument('--file_BARRA_dir', type=str,
                     help='dataset directory')
 
 parser.add_argument('--file_DEM_dir', type=str, 
-                    default="./DEM/",
+                    default="../DEM/",
                     help='dataset directory')
 
 parser.add_argument('--nine2nine', type=bool, 
@@ -142,7 +142,7 @@ parser.add_argument('--test_every', type=int, default=1000,
                     help='do test per every N batches')
 parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs to train')
-parser.add_argument('--batch_size', type=int, default=16,
+parser.add_argument('--batch_size', type=int, default=8,
                     help='input batch size for training')
 parser.add_argument('--split_batch', type=int, default=1,
                     help='split the batch into smaller chunks')
@@ -209,8 +209,8 @@ parser.add_argument('--testset', type=str, default='Set5',
                     help='dataset name for testing')
 parser.add_argument('--degradation', type=str, default='BI',
                     help='degradation model: BI, BD')
-args = parser.parse_args()
-
+# args = []
+# args = parser.parse_known_args()[0]
 # import platform 
 # sys = platform.system()
 # if sys == "Windows":
@@ -223,6 +223,8 @@ args = parser.parse_args()
 
 #     template.set_template(args)
 
+args = parser.parse_args()
+
 args.scale = list(map(lambda x: int(x), args.scale.split('+')))
 
 if args.epochs == 0:
@@ -233,10 +235,6 @@ for arg in vars(args):
         vars(args)[arg] = True
     elif vars(args)[arg] == 'False':
         vars(args)[arg] = False
-
-
-
-
 
 
 

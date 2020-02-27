@@ -193,7 +193,7 @@ class ACCESS_BARRA_v3(Dataset):
             print("no file or no permission")
         
         
-        _,_,date_for_BARRA,time_leading=self.filename_list[0]
+        _,_,_,date_for_BARRA,time_leading=self.filename_list[0]
         if not os.path.exists("/g/data/ma05/BARRA_R/v1/forecast/spec/accum_prcp/1990/01/accum_prcp-fc-spec-PT1H-BARRA_R-v1-19900109T0600Z.sub.nc"):
             print(self.file_BARRA_dir)
             print("no file or no permission!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -201,9 +201,10 @@ class ACCESS_BARRA_v3(Dataset):
         data_exp=dpt.map_aust(data_high,domain=args.domain,xrarray=True)#,domain=domain)
         self.lat=data_exp["lat"]
         self.lon=data_exp["lon"]
-        self.shape=(81,108)
-        
-        self.dem_data=dpt.interp_tensor_2d( read_dem(args.file_DEM_dir+"dem-9s1.tif"),self.shape )
+        self.shape=(79,94)
+        if self.args.dem:
+            data_dem=dpt.add_lat_lon( dpt.read_dem(args.file_DEM_dir+"dem-9s1.tif"))
+            self.dem_data=dpt.interp_tensor_2d(dpt.map_aust_old(data_dem,xrarray=False) ,self.shape )
         
 
         
@@ -238,13 +239,14 @@ class ACCESS_BARRA_v3(Dataset):
                 
                     
                 
-                filename="da_pr_"+date.strftime("%Y%m%d")+"_"+en+".nc"
+#                 filename="da_pr_"+date.strftime("%Y%m%d")+"_"+en+".nc"cd
                 access_path=rootdir+en+"/"+"da_pr_"+date.strftime("%Y%m%d")+"_"+en+".nc"
                 if os.path.exists(access_path):
                     for i in range(self.leading_time_we_use):
                         if date==self.end_date and i==1:
                             break
                         path=[access_path]
+                        path.append(en)
                         barra_date=date+timedelta(i)
                         path.append(date)
                         path.append(barra_date)
@@ -267,54 +269,61 @@ class ACCESS_BARRA_v3(Dataset):
         t=time.time()
         
         #read_data filemame[idx]
-        access_filename_pr,access_date,date_for_BARRA,time_leading=self.filename_list[idx]
+        access_filename_pr,en,access_date,date_for_BARRA,time_leading=self.filename_list[idx]
 #         print(type(date_for_BARRA))
 #         low_filename,high_filename,time_leading=self.filename_list[idx]
 
         data_low=dpt.read_access_data(access_filename_pr,idx=time_leading)
         lr_raw=dpt.map_aust(data_low,domain=self.args.domain,xrarray=False)
+        lr=np.expand_dims(dpt.interp_tensor_2d(lr_raw,self.shape),axis=2)
         
 #         domain = [train_data.lon.data.min(), train_data.lon.data.max(), train_data.lat.data.min(), train_data.lat.data.max()]
 #         print(domain)
 
         data_high=dpt.read_barra_data_fc(self.file_BARRA_dir,date_for_BARRA,nine2nine=True)
         label=dpt.map_aust(data_high,domain=self.args.domain,xrarray=False)#,domain=domain)
-        lr=dpt.interp_tensor_2d(lr_raw,self.shape)
+
         
         if self.args.zg:
             access_filename_zg=self.args.file_ACCESS_dir+"zg/daily/"+en+"/"+"da_zg_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_zg=dpt.read_access_zg(access_filename_zg,idx=time_leading)
             data_zg_aus=map_aust(data_zg,xrarray=False)
             lr_zg=dpt.interp_tensor_3d(data_zg_aus,self.shape)
+            lr=np.concatenate((lr,np.expand_dims(lr_zg,axis=2)),axis=2)
         
         if self.args.psl:
             access_filename_psl=self.args.file_ACCESS_dir+"psl/daily/"+en+"/"+"da_psl_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_psl=dpt.read_access_data(access_filename_psl,idx=time_leading)
             data_psl_aus=map_aust(data_psl,xrarray=False)
             lr_psl=dpt.interp_tensor_2d(data_psl_aus,self.shape)
+            lr=np.concatenate((lr,np.expand_dims(lr_psl,axis=2)),axis=2)
         if self.args.tasmax:
             access_filename_tasmax=self.args.file_ACCESS_dir+"tasmax/daily/"+en+"/"+"da_tasmax_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_tasmax=dpt.read_access_data(access_filename_tasmax,idx=time_leading)
             data_tasmax_aus=map_aust(data_tasmax,xrarray=False)
             lr_tasmax=dpt.interp_tensor_2d(data_tasmax_aus,self.shape)
+            lr=np.concatenate((lr,np.expand_dims(lr_tasmax,axis=2)),axis=2)
+
             
         if self.args.tasmax:
             access_filename_tasmin=self.args.file_ACCESS_dir+"tasmin/daily/"+en+"/"+"da_tasmin_"+access_date.strftime("%Y%m%d")+"_"+en+".nc"
             data_tasmin=dpt.read_access_data(access_filename_tasmin,idx=time_leading)
             data_tasmin_aus=map_aust(data_tasmin,xrarray=False)
             lr_tasmin=dpt.interp_tensor_2d(data_tasmin_aus,self.shape)
+            lr=np.concatenate(lr,np.expand_dims(lr_tasmin,axis=2),axis=2)
+        if self.args.dem:
+#             print("add dem data")
+            lr=np.concatenate((lr,np.expand_dims(self.dem_data,axis=2)),axis=2)
+
             
-            
-        print("end loading one data,time cost %f"%(time.time()-t))
+#         print("end loading one data,time cost %f"%(time.time()-t))
+
 
         if self.transform:#channel 数量需要整理！！
             return self.transform(lr*86400),self.transform(label),torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
         else:
             return lr*86400,label,torch.tensor(int(date_for_BARRA.strftime("%Y%m%d"))),torch.tensor(time_leading)
 #         return np.reshape(train_data,(78,100,1))*86400,np.reshape(label,(312,400,1))
-
-
-
 
 
 

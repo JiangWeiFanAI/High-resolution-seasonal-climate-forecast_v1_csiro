@@ -3,7 +3,7 @@ import os
 import data_processing_tool as dpt
 from datetime import timedelta, date, datetime
 from args_parameter import args
-from PrepareData import ACCESS_BARRA_v1,ACCESS_BARRA_v2
+from PrepareData import ACCESS_BARRA_v3,ACCESS_BARRA_v2
 
 import torch,os,torchvision
 import torch.nn as nn
@@ -45,11 +45,11 @@ def main():
         
         args.file_ACCESS_dir="E:/climate/access-s1/"
         args.file_BARRA_dir="C:/Users/JIA059/barra/"
-
+        args.file_DEM_dir="../DEM/"
         
         init_date=date(1970, 1, 1)
         start_date=date(1990, 1, 2)
-        end_date=date(1990,12,25)
+        end_date=date(1990,12,10)
     else:
         print("platform is Linux")
         args.file_ACCESS_dir_pr="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
@@ -98,7 +98,7 @@ def main():
     #     transforms.Normalize(IMG_MEAN, IMG_STD)
     ])
 
-    data_set=ACCESS_BARRA_v2(start_date,end_date,transform=train_transforms,args=args)
+    data_set=ACCESS_BARRA_v3(start_date,end_date,transform=train_transforms,args=args)
     train_data,val_data=random_split(data_set,[int(len(data_set)*0.8),len(data_set)-int(len(data_set)*0.8)])
 
 
@@ -160,11 +160,14 @@ def main():
             print("start first batch train")
 
             lr, hr = prepare([lr, hr])
-
+            print(lr.shape)
+            print(hr.shape)
+            print(lr.shape[2]*4,lr.shape[3]*4)
             if not os.path.exists("./model/save/"+args.train_name+"/"):
                 os.mkdir("./model/save/"+args.train_name+"/")
             f = open("./model/save/"+args.train_name+"/"+str(batch)+".txt",'w')
             f.close()
+            
             
     #         optimizer_my.zero_grad()
     #         with torch.set_grad_enabled(True):
