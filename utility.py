@@ -98,6 +98,7 @@ class checkpoint():
 
         open_type = 'a' if os.path.exists(self.dir + '/log.txt') else 'w'
         self.log_file = open(self.dir + '/log.txt', open_type)
+        
         with open(self.dir + '/config.txt', open_type) as f:
             f.write(now + '\n\n')
             for arg in vars(args):
@@ -125,6 +126,15 @@ class checkpoint():
         if refresh:
             self.log_file.close()
             self.log_file = open(self.dir + '/log.txt', 'a')
+            
+    def my_write_log(self, log, refresh=False):
+        print(log)
+        my_log_file=open("./model/save/"+self.args.train_name + '/log.txt', 'a')
+        my_log_file.write(log + '\n')
+        my_log_file.close()
+        if refresh:
+            self.my_log_file.close()
+            self.my_log_file = open(self.dir + '/log.txt', 'a')
 
     def done(self):
         self.log_file.close()

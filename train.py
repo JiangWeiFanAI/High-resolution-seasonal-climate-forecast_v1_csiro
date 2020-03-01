@@ -37,9 +37,12 @@ def main():
         init_date=date(1970, 1, 1)
         start_date=date(1990, 1, 2)
         end_date=date(1990,12,15) #if 929 is true we should substract 1 day    
-        args.file_ACCESS_dir="E:/climate/access-s1/"
-        args.file_BARRA_dir="C:/Users/JIA059/barra/"
+#         args.file_ACCESS_dir="E:/climate/access-s1/"
+#         args.file_BARRA_dir="C:/Users/JIA059/barra/"
         args.file_DEM_dir="../DEM/"
+        
+        args.file_ACCESS_dir="H:/climate/access-s1/" 
+        args.file_BARRA_dir="D:/dataset/accum_prcp/"
     else:
         args.file_ACCESS_dir_pr="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
         args.file_ACCESS_dir="/g/data/ub7/access-s1/hc/raw_model/atmos/"

@@ -25,7 +25,18 @@ import math
 import xarray as xr
 from skimage.measure import compare_ssim
 from skimage.measure import compare_psnr,compare_mse
-import platform 
+import platform
+from torch.autograd import Variable
+
+
+def write_log(log):
+    print(log)
+    my_log_file=open("./model/save/"+args.train_name + '/train.txt', 'a')
+#     log="Train for batch %d,data loading time cost %f s"%(batch,start-time.time())
+    my_log_file.write(log + '\n')
+    my_log_file.close()
+    return
+
 
 def main():
     init_date=date(1970, 1, 1)
@@ -36,9 +47,11 @@ def main():
     if sys == "Windows":
         init_date=date(1970, 1, 1)
         start_date=date(1990, 1, 2)
-        end_date=date(1990,12,15) #if 929 is true we should substract 1 day    
-        args.file_ACCESS_dir="E:/climate/access-s1/"
-        args.file_BARRA_dir="C:/Users/JIA059/barra/"
+        end_date=date(1990,12,15) #if 929 is true we should substract 1 day   
+        args.file_ACCESS_dir="H:/climate/access-s1/" 
+        args.file_BARRA_dir="D:/dataset/accum_prcp/"
+#         args.file_ACCESS_dir="E:/climate/access-s1/"
+#         args.file_BARRA_dir="C:/Users/JIA059/barra/"
         args.file_DEM_dir="../DEM/"
     else:
         args.file_ACCESS_dir_pr="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
@@ -131,56 +144,64 @@ def main():
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer_my, gamma=0.9)
     # torch.optim.lr_scheduler.MultiStepLR(optimizer_my, milestones=[20,80], gamma=0.1)
     
-    if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
-        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-        net = nn.DataParallel(net)
-    else:
-        print("Let's use cpu!")
+#     if torch.cuda.device_count() > 1:
+#         write_log("Let's use"+str(torch.cuda.device_count())+"GPUs!")
+#         # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+#         net = nn.DataParallel(net)
+#     else:
+#         write_log("Let's use"+str(torch.cuda.device_count())+"GPUs!")
 
-    model.to(device)
 
+    net.to(device)
 
 
     ##########################################################################training
-    #training
 
-
-#     max_error=np.inf
-#     for e in range(args.epochs):
-#         #train
-#         net.train()
-#         loss=0
-#         start=time.time()
-#         for batch, (lr, hr,_,_) in enumerate(train_dataloders):
-#             print("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
-#             start=time.time()
+    write_log("start")
+    max_error=np.inf
+    for e in range(args.epochs):
+        #train
+        net.train()
+        loss=0
+        start=time.time()
+        for batch, (lr, hr,_,_) in enumerate(train_dataloders):
+            write_log("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
+            start=time.time()
 #             lr, hr = prepare([lr, hr])
             
 #             optimizer_my.zero_grad()
 #             with torch.set_grad_enabled(True):
 #                 sr = net(lr, 0)
 #                 running_loss =criterion(sr, hr)
-#                 loss+=running_loss #.copy()?
-#             running_loss.backward()
-#             optimizer_my.step()
-#             print("Train done,train time cost %f s"%(start-time.time()))
-#             start=time.time()
+                
+#                 running_loss.backward()
+#                 optimizer_my.step()
+#             loss+=running_loss #.copy()?
+            write_log("Train done,train time cost %f s"%(start-time.time()))
+            start=time.time()
 
-#         #validation
-#         net.eval()
-#         start=time.time()
-#         with torch.no_grad():
-#             eval_psnr=0
-#             eval_ssim=0
+        #validation
+        net.eval()
+        start=time.time()
+        with torch.no_grad():
+            eval_psnr=0
+            eval_ssim=0
 #             tqdm_val = tqdm(val_dataloders, ncols=80)
-#             for idx_img, (lr, hr,_,_) in enumerate(tqdm_val):
-#                 lr, hr = prepare([lr, hr])
-#                 sr = net(lr, 0)
-#                 val_loss=criterion(sr, hr)
-#                 for ssr,hhr in zip(sr,hr):
-#                     eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
-#                     eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )      
+            for idx_img, (lr, hr,_,_) in enumerate(val_dataloders):
+                lr, hr = prepare([lr, hr])
+                sr = net(lr, 0)
+                val_loss=criterion(sr, hr)
+                for ssr,hhr in zip(sr,hr):
+                    eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+                    eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+                    
+        write_log("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+                  e,
+                  time.time()-start,
+                  optimizer_my.state_dict()['param_groups'][0]['lr'],
+                  loss.item()/len(train_data),
+                  val_loss
+             ))
 #         print("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
 #                   e,
 #                   time.time()-start,
@@ -188,12 +209,13 @@ def main():
 #                   loss.item()/len(train_data),
 #                   val_loss
 #              ))
-#         if running_loss<max_error:
-#             max_error=running_loss
-#     #         torch.save(net,train_loss"_"+str(e)+".pkl")
-#             if not os.path.exists("./model/save/"+args.train_name+"/"):
-#                 os.mkdir("./model/save/"+args.train_name+"/")
-#             torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
+        if running_loss<max_error:
+            max_error=running_loss
+    #         torch.save(net,train_loss"_"+str(e)+".pkl")
+            if not os.path.exists("./model/save/"+args.train_name+"/"):
+                os.mkdir("./model/save/"+args.train_name+"/")
+            write_log("saving")    
+            torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
             
             
 if __name__=='__main__':

@@ -109,8 +109,8 @@ class RCAN(nn.Module):
         # define tail module
         modules_tail = [
             common.Upsampler(conv, scale, n_feats, act=False),
-            conv(n_feats, 1., kernel_size)
-#             conv(n_feats, args.n_colors, kernel_size)
+#             conv(n_feats, 1., kernel_size)
+            conv(n_feats, args.channels, kernel_size)
         
         ]
 

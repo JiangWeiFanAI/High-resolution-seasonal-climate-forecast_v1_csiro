@@ -77,3 +77,14 @@ print("  ------------------------------")
 print("  batch_size     | %5d"%args.batch_size)
 print("  ------------------------------")
 print("  using cpu only？ | %5d"%args.cpu)
+
+def main():
+    start=time.time()
+    checkpoint = utility.checkpoint(args)
+    checkpoint.my_write_log("Let's use"+str(torch.cuda.device_count())+"GPUs!")
+    checkpoint.my_write_log("start")
+    batch=1
+    checkpoint.my_write_log("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
+
+if __name__=='__main__':
+    main()

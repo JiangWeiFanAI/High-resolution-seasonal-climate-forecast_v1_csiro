@@ -24,7 +24,7 @@ parser.add_argument('--pr', type=bool,
                 help='add-on pr?')
 
 parser.add_argument('--dem', type=bool, 
-                default=True,
+                default=False,
                 help='add-on dem?') 
 parser.add_argument('--psl', type=bool, 
                 default=False,
@@ -211,19 +211,19 @@ parser.add_argument('--degradation', type=str, default='BI',
                     help='degradation model: BI, BD')
 # args = []
 # args = parser.parse_known_args()[0]
-# import platform 
-# sys = platform.system()
-# if sys == "Windows":
-#     args = parser.parse_args(args=[])
-# else:
-#     args = parser.parse_args()
+import platform 
+sys = platform.system()
+if sys == "Windows":
+    args = parser.parse_args(args=[])
+else:
+    args = parser.parse_args()
 
 # args = parser.parse_args()
 
 
 #     template.set_template(args)
 
-args = parser.parse_args()
+# args = parser.parse_args()
 
 args.scale = list(map(lambda x: int(x), args.scale.split('+')))
 
