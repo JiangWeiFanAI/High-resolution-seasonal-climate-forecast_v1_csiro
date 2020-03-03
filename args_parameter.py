@@ -19,25 +19,41 @@ parser.add_argument('--seed', type=int, default=1,
                     help='random seed')
 
 # Data specifications
+
 parser.add_argument('--pr', type=bool, 
                 default=True,
                 help='add-on pr?')
 
-parser.add_argument('--dem', type=bool, 
-                default=False,
+parser.add_argument('--dem', action='store_true',
                 help='add-on dem?') 
-parser.add_argument('--psl', type=bool, 
-                default=False,
+parser.add_argument('--psl', action='store_true',
                 help='add-on psl?') 
-parser.add_argument('--zg', type=bool, 
-                default=False,
+parser.add_argument('--zg', action='store_true',
                 help='add-on zg?') 
-parser.add_argument('--tasmax', type=bool, 
-                default=False,
+parser.add_argument('--tasmax', action='store_true',
                 help='add-on tasmax?') 
-parser.add_argument('--tasmin', type=bool, 
-                default=False,
+parser.add_argument('--tasmin', action='store_true',
                 help='add-on tasmin?')
+
+# parser.add_argument('--pr', type=bool, 
+#                 default=True,
+#                 help='add-on pr?')
+
+# parser.add_argument('--dem', type=bool, 
+#                 default=False,
+#                 help='add-on dem?') 
+# parser.add_argument('--psl', type=bool, 
+#                 default=False,
+#                 help='add-on psl?') 
+# parser.add_argument('--zg', type=bool, 
+#                 default=False,
+#                 help='add-on zg?') 
+# parser.add_argument('--tasmax', type=bool, 
+#                 default=False,
+#                 help='add-on tasmax?') 
+# parser.add_argument('--tasmin', type=bool, 
+#                 default=False,
+#                 help='add-on tasmin?')
 
 parser.add_argument('--leading_time_we_use', type=int, 
                 default=7,
@@ -116,7 +132,7 @@ parser.add_argument('--model', default='RCAN',
 
 parser.add_argument('--act', type=str, default='relu',
                     help='activation function')
-parser.add_argument('--pre_train', type=str, default='.',
+parser.add_argument('--pre_train', type=str, default='./model/RCAN_BIX4.pt',
                     help='pre-trained model directory')
 parser.add_argument('--extend', type=str, default='.',
                     help='pre-trained model directory')
@@ -129,7 +145,7 @@ parser.add_argument('--res_scale', type=float, default=1,
 parser.add_argument('--shift_mean', default=True,
                     help='subtract pixel mean from the input')
 parser.add_argument('--precision', type=str, default='single',
-                    choices=('single', 'half'),
+                    choices=('single', 'half','double'),
                     help='FP precision for test (single | half)')
 
 # Training specifications
@@ -183,7 +199,7 @@ parser.add_argument('--skip_threshold', type=float, default='1e6',
                     help='skipping batch that has large error')
 
 # Log specifications
-parser.add_argument('--save', type=str, default='RCAN',
+parser.add_argument('--save', type=str, default='My_RCAN',
                     help='file name to save')
 parser.add_argument('--load', type=str, default='.',
                     help='file name to load')
@@ -209,16 +225,15 @@ parser.add_argument('--testset', type=str, default='Set5',
                     help='dataset name for testing')
 parser.add_argument('--degradation', type=str, default='BI',
                     help='degradation model: BI, BD')
-# args = []
-# args = parser.parse_known_args()[0]
-import platform 
-sys = platform.system()
-if sys == "Windows":
-    args = parser.parse_args(args=[])
-else:
-    args = parser.parse_args()
 
-# args = parser.parse_args()
+# import platform 
+# sys = platform.system()
+# if sys == "Windows":
+#     args = parser.parse_args(args=[])
+# else:
+#     args = parser.parse_args()
+
+args = parser.parse_args()
 
 
 #     template.set_template(args)

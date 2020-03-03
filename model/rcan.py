@@ -74,28 +74,33 @@ class RCAN(nn.Module):
         act = nn.ReLU(True)
         print('accesss-s1 mean (0.4690)')
 #         rgb_mean = (0.0020388064770,0.0020388064770,0.0020388064770)
-        if args.channels==1:
-            rgb_mean = [0.0020388064770]
-            rgb_std = [1.0]
-        if args.channels==2:
-            rgb_mean = [0.0020388064770,0.0020388064770]
-            rgb_std = [1.0,1.0]
-        # RGB mean for DIV2K 1-800
-        #rgb_mean = (0.4488, 0.4371, 0.4040)
-        # RGB mean for DIVFlickr2K 1-3450
-        # rgb_mean = (0.4690, 0.4490, 0.4036)
+#         if args.channels==1:
+#             rgb_mean = [0.0020388064770]
+#             rgb_std = [1.0]
+#         if args.channels==2:
+#             rgb_mean = [0.0020388064770,0.0020388064770]
+#             rgb_std = [1.0,1.0]
+#         if args.channels==3:s
+#             rgb_mean = [0.0020388064770,0.0020388064770,0.0020388064770]
+#             rgb_std = [1.0,1.0,1.0]
+#         RGB mean for DIV2K 1-800
+#         rgb_mean = (0.4488, 0.4371, 0.4040)
+#         RGB mean for DIVFlickr2K 1-3450
+#         rgb_mean = (0.4690, 0.4490, 0.4036)
 #         if args.data_train == 'DIV2K':
-#             print('Use DIV2K mean (0.4488, 0.4371, 0.4040)')
+# #             print('Use DIV2K mean (0.4488, 0.4371, 0.4040)')
 #             rgb_mean = (0.4488, 0.4371, 0.4040)
 #         elif args.data_train == 'DIVFlickr2K':
-#             print('Use DIVFlickr2K mean (0.4690, 0.4490, 0.4036)')
+# #             print('Use DIVFlickr2K mean (0.4690, 0.4490, 0.4036)')
 #             rgb_mean = (0.4690, 0.4490, 0.4036)
+        rgb_mean = (0.4690, 0.4490, 0.4036)
+        rgb_std = [1.0,1.0,1.0]
 
-        self.sub_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std,args.channels)
+        self.sub_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std,3)
         
         # define head module
 #         modules_head = [conv(args.n_colors, n_feats, kernel_size)]
-        modules_head = [conv(args.channels, n_feats, kernel_size)]
+        modules_head = [conv(3, n_feats, kernel_size)]
 
 
         # define body module
@@ -109,12 +114,12 @@ class RCAN(nn.Module):
         # define tail module
         modules_tail = [
             common.Upsampler(conv, scale, n_feats, act=False),
-#             conv(n_feats, 1., kernel_size)
-            conv(n_feats, args.channels, kernel_size)
+#             conv(n_feats, 1, kernel_size)
+            conv(n_feats, 3, kernel_size)
         
         ]
 
-        self.add_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std, args.channels)
+        self.add_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std, 3,1)
 
         self.head = nn.Sequential(*modules_head)
         self.body = nn.Sequential(*modules_body)

@@ -29,6 +29,8 @@ import platform
 from torch.autograd import Variable
 
 def main():
+
+    
     init_date=date(1970, 1, 1)
     start_date=date(1990, 1, 2)
     end_date=date(2012,12,25) #if 929 is true we should substract 1 day    
@@ -53,7 +55,7 @@ def main():
     if args.pr:
         args.channels+=1
     if args.zg:
-        args.channels+=1
+        args.channels+=22
     if args.psl:
         args.channels+=1
     if args.tasmax:
@@ -69,8 +71,6 @@ def main():
     args.leading_time_we_use=7
     args.ensemble=2
 
-
-    print(access_rgb_mean)
 
     print("training statistics:")
     print("  ------------------------------")
@@ -97,6 +97,9 @@ def main():
 
     data_set=ACCESS_BARRA_v3(start_date,end_date,transform=train_transforms,args=args)
     train_data,val_data=random_split(data_set,[int(len(data_set)*0.8),len(data_set)-int(len(data_set)*0.8)])
+    
+    print(data_set[0][0].shape)
+    print(data_set[0][1].shape)
 
 
     print("Dataset statistics:")
@@ -107,60 +110,60 @@ def main():
     print("  ------------------------------")
     print("  val   | %5d"%len(val_data))
 
-    ###################################################################################set a the dataLoader
-    train_dataloders =DataLoader(train_data,
-                                            batch_size=args.batch_size,
-                                            shuffle=False,
-                                num_workers=args.n_threads)
-    val_dataloders =DataLoader(val_data,
-                                            batch_size=args.batch_size,
-                                            shuffle=False,
-                              num_workers=args.n_threads)
-    ##
-    def prepare( l, volatile=False):
-        def _prepare(tensor):
-            if args.precision == 'half': tensor = tensor.half()
-            return tensor.to(device)
+#     ###################################################################################set a the dataLoader
+#     train_dataloders =DataLoader(train_data,
+#                                             batch_size=args.batch_size,
+#                                             shuffle=False,
+#                                 num_workers=args.n_threads)
+#     val_dataloders =DataLoader(val_data,
+#                                             batch_size=args.batch_size,
+#                                             shuffle=False,
+#                               num_workers=args.n_threads)
+#     ##
+#     def prepare( l, volatile=False):
+#         def _prepare(tensor):
+#             if args.precision == 'half': tensor = tensor.half()
+#             return tensor.to(device)
 
-        return [_prepare(_l) for _l in l]
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#         return [_prepare(_l) for _l in l]
+#     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
-    checkpoint = utility.checkpoint(args)
-    net = model.Model(args, checkpoint).double()
-    args.lr=0.001
-    criterion = nn.L1Loss()
-    optimizer_my = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
-    # scheduler = optim.lr_scheduler.StepLR(optimizer_my, step_size=7, gamma=0.1)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer_my, gamma=0.9)
-    # torch.optim.lr_scheduler.MultiStepLR(optimizer_my, milestones=[20,80], gamma=0.1)
+#     checkpoint = utility.checkpoint(args)
+#     net = model.Model(args, checkpoint).double()
+#     args.lr=0.001
+#     criterion = nn.L1Loss()
+#     optimizer_my = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
+#     # scheduler = optim.lr_scheduler.StepLR(optimizer_my, step_size=7, gamma=0.1)
+#     scheduler = optim.lr_scheduler.ExponentialLR(optimizer_my, gamma=0.9)
+#     # torch.optim.lr_scheduler.MultiStepLR(optimizer_my, milestones=[20,80], gamma=0.1)
     
-    if torch.cuda.device_count() > 1:
-        checkpoint.my_write_log("Let's use"+str(torch.cuda.device_count())+"GPUs!")
-        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-        net = nn.DataParallel(net)
-    else:
-        checkpoint.my_write_log("Let's use"+str(torch.cuda.device_count())+"GPUs!")
+#     if torch.cuda.device_count() > 1:
+#         checkpoint.my_write_log("Let's use"+str(torch.cuda.device_count())+"GPUs!")
+#         # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+#         net = nn.DataParallel(net)
+#     else:
+#         checkpoint.my_write_log("Let's use"+str(torch.cuda.device_count())+"GPUs!")
 
 
-    net.to(device)
+#     net.to(device)
 
 
     ##########################################################################training
 
-    checkpoint.my_write_log("start")
-    max_error=np.inf
-    for e in range(args.epochs):
-        #train
-        net.train()
-        loss=0
-        start=time.time()
-        for batch, (lr, hr,_,_) in enumerate(train_dataloders):
-            my_log_file=open("./model/save/"+args.train_name + '/log.txt', 'a')
-            log="Train for batch %d,data loading time cost %f s"%(batch,start-time.time())
-            my_log_file.write(log + '\n')
-            my_log_file.close()
+#     checkpoint.my_write_log("start")
+#     max_error=np.inf
+#     for e in range(args.epochs):
+#         #train
+#         net.train()
+#         loss=0
+#         start=time.time()
+#         for batch, (lr, hr,_,_) in enumerate(train_dataloders):
+#             my_log_file=open("./model/save/"+args.train_name + '/log.txt', 'a')
+#             log="Train for batch %d,data loading time cost %f s"%(batch,start-time.time())
+#             my_log_file.write(log + '\n')
+#             my_log_file.close()
 
-            start=time.time()
+#             start=time.time()
 #             lr, hr = prepare([lr, hr])
             
 #             optimizer_my.zero_grad()
@@ -171,8 +174,8 @@ def main():
 #                 running_loss.backward()
 #                 optimizer_my.step()
 #             loss+=running_loss #.copy()?
-            checkpoint.my_write_log("Train done,train time cost %f s"%(start-time.time()))
-            start=time.time()
+#             checkpoint.my_write_log("Train done,train time cost %f s"%(start-time.time()))
+#             start=time.time()
 
 #         #validation
 #         net.eval()

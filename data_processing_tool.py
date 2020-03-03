@@ -333,7 +333,7 @@ def map_aust(data, lat=None, lon=None,data_name="pr",domain = [111.85, 156.275, 
     #         domain = [111.85, 156.275, -44.35, -9.975]
         a = np.logical_and(lon>=domain[0], lon<=domain[1])
         b = np.logical_and(lat>=domain[2], lat<=domain[3])
-        da=da[b,:][:,a].copy()
+        da=da[b,:][:,a]#.copy()
         llons, llats=lon[a], lat[b] # 将维度按照 x,y 横向竖向
         if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>" and xrarray:
             return xr.DataArray(da,coords=[llats,llons],dims=["lat","lon"])
@@ -352,7 +352,7 @@ def map_aust(data, lat=None, lon=None,data_name="pr",domain = [111.85, 156.275, 
             da=data
         a = np.logical_and(lon>=domain[0], lon<=domain[1])
         b = np.logical_and(lat>=domain[2], lat<=domain[3])
-        da=da[:,b][:,:,a].copy()
+        da=da[:][:,b][:,:,a]#.copy()
         llons, llats=lon[a], lat[b] # 将维度按照 x,y 横向竖向
         if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>" and xrarray:
             return xr.DataArray(da,coords=[level,llats,llons],dims=["level","lat","lon"])
@@ -361,6 +361,54 @@ def map_aust(data, lat=None, lon=None,data_name="pr",domain = [111.85, 156.275, 
 
 
         return da,llats,llons
+
+    
+def map_aust_return_dim(data, lat=None, lon=None,data_name="pr",domain = [111.85, 156.275, -44.35, -9.975],xrarray=True):
+    '''
+    domain=[111.975, 156.275, -44.525, -9.975]
+    domain = [111.85, 156.275, -44.35, -9.975]for can be divide by 4
+    '''
+    if data_name=="pr":
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>":
+            da=data.data
+            lat=data.lat.data
+            lon=data.lon.data
+        else:
+            da=data
+
+    #     if domain==None:
+    #         domain = [111.85, 156.275, -44.35, -9.975]
+        a = np.logical_and(lon>=domain[0], lon<=domain[1])
+        b = np.logical_and(lat>=domain[2], lat<=domain[3])
+        da=da[b,:][:,a]#.copy()
+        llons, llats=lon[a], lat[b] # 将维度按照 x,y 横向竖向
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>" and xrarray:
+            return xr.DataArray(da,coords=[llats,llons],dims=["lat","lon"])
+        else:
+            return da,a,b
+
+
+        return da,llats,llons
+    else:
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>":
+            da=data.data
+            level=data.level
+            lat=data.lat.data
+            lon=data.lon.data
+        else:
+            da=data
+        a = np.logical_and(lon>=domain[0], lon<=domain[1])
+        b = np.logical_and(lat>=domain[2], lat<=domain[3])
+        da=da[:][:,b][:,:,a]#.copy()
+        llons, llats=lon[a], lat[b] # 将维度按照 x,y 横向竖向
+        if str(type(data))=="<class 'xarray.core.dataarray.DataArray'>" and xrarray:
+            return xr.DataArray(da,coords=[level,llats,llons],dims=["level","lat","lon"])
+        else:
+            return da,a,b
+
+
+        return da,llats,llons    
+    
 
 
 
@@ -391,7 +439,7 @@ def interp_tensor_3d(X, size, fill=True):
     if fill:
         X[np.isnan(X)]=0# if there is an exeption, ensure that x is numpy not xrarray
         
-    print(np.swapaxes(X,2,0).shape)
+#     print(np.swapaxes(X,2,0).shape)
     scaled_tensor = cv2.resize(np.swapaxes(X,2,0), (size[0], size[1]),interpolation=cv2.INTER_CUBIC)
     return np.swapaxes(scaled_tensor,1,0)
 
