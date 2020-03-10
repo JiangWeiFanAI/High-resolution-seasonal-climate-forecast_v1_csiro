@@ -1,0 +1,186 @@
+True
+2.5114674452354135
+training statistics:
+  ------------------------------
+  trainning name  |  temp01
+  ------------------------------
+  num of channels |     2
+  ------------------------------
+  num of threads  |     0
+  ------------------------------
+  batch_size     |     8
+  ------------------------------
+  using cpu only？ |     0
+=> BARRA_R & ACCESS_S1 loading
+=> from 1990/01/02 to 2012/12/25
+Dataset statistics:
+  ------------------------------
+  total | 15429
+  ------------------------------
+  train | 12343
+  ------------------------------
+  val   |  3086
+Making model...
+accesss-s1 mean (0.4690)
+Train for batch 0,data loading time cost -29.675620 s
+Train done,train time cost -1.923287 s
+Train for batch 1,data loading time cost -29.010143 s
+Train done,train time cost -1.929001 s
+Train for batch 2,data loading time cost -28.391099 s
+Train done,train time cost -1.939748 s
+Train for batch 3,data loading time cost -30.548567 s
+Train done,train time cost -1.908453 s
+Train for batch 4,data loading time cost -27.806245 s
+Train done,train time cost -1.942619 s
+Train for batch 5,data loading time cost -27.477816 s
+Train done,train time cost -1.941869 s
+Train for batch 6,data loading time cost -27.204676 s
+Train done,train time cost -1.907876 s
+Train for batch 7,data loading time cost -27.714612 s
+Train done,train time cost -1.933135 s
+Train for batch 8,data loading time cost -28.398664 s
+Train done,train time cost -1.920930 s
+Train for batch 9,data loading time cost -28.003139 s
+Train done,train time cost -1.908105 s
+Train for batch 10,data loading time cost -28.321317 s
+Train done,train time cost -1.929385 s
+Train for batch 11,data loading time cost -28.187477 s
+Train done,train time cost -1.917091 s
+Train for batch 12,data loading time cost -24.188436 s
+Train done,train time cost -1.907500 s
+Train for batch 13,data loading time cost -28.953621 s
+Train done,train time cost -1.930673 s
+Train for batch 14,data loading time cost -28.679917 s
+Train done,train time cost -1.932501 s
+Train for batch 15,data loading time cost -28.670822 s
+Train done,train time cost -1.905448 s
+Train for batch 16,data loading time cost -28.667859 s
+Train done,train time cost -1.928411 s
+Train for batch 17,data loading time cost -28.261058 s
+Train done,train time cost -1.938128 s
+Train for batch 18,data loading time cost -24.674406 s
+Train done,train time cost -1.906949 s
+Train for batch 19,data loading time cost -26.513628 s
+Train done,train time cost -1.935728 s
+Train for batch 20,data loading time cost -28.204958 s
+Train done,train time cost -1.906340 s
+Train for batch 21,data loading time cost -26.403991 s
+Train done,train time cost -1.944021 s
+Train for batch 22,data loading time cost -27.946270 s
+Train done,train time cost -1.927649 s
+Train for batch 23,data loading time cost -25.835656 s
+Train done,train time cost -1.906839 s
+Train for batch 24,data loading time cost -28.312698 s
+Train done,train time cost -1.930324 s
+Train for batch 25,data loading time cost -27.214333 s
+Train done,train time cost -1.936460 s
+Train for batch 26,data loading time cost -29.494242 s
+Train done,train time cost -1.903072 s
+Train for batch 27,data loading time cost -29.035661 s
+Train done,train time cost -1.944332 s
+Train for batch 28,data loading time cost -29.940696 s
+Train done,train time cost -1.930295 s
+Train for batch 29,data loading time cost -28.517718 s
+Train done,train time cost -1.908578 s
+Train for batch 30,data loading time cost -25.160928 s
+Train done,train time cost -1.932785 s
+Train for batch 31,data loading time cost -27.434457 s
+Train done,train time cost -1.907011 s
+Train for batch 32,data loading time cost -25.119911 s
+Train done,train time cost -1.935142 s
+Train for batch 33,data loading time cost -26.254280 s
+Train done,train time cost -1.934464 s
+Train for batch 34,data loading time cost -27.251470 s
+Train done,train time cost -1.907938 s
+Train for batch 35,data loading time cost -29.009033 s
+Train done,train time cost -1.943409 s
+Train for batch 36,data loading time cost -28.737685 s
+Train done,train time cost -1.932909 s
+Train for batch 37,data loading time cost -30.564379 s
+Train done,train time cost -1.908729 s
+Train for batch 38,data loading time cost -24.855286 s
+Train done,train time cost -1.942306 s
+Train for batch 39,data loading time cost -24.856883 s
+Train done,train time cost -1.905971 s
+Train for batch 40,data loading time cost -26.417515 s
+Train done,train time cost -1.929792 s
+Train for batch 41,data loading time cost -27.945652 s
+Train done,train time cost -1.937043 s
+Train for batch 42,data loading time cost -30.515334 s
+Train done,train time cost -1.903714 s
+Train for batch 43,data loading time cost -29.359596 s
+Train done,train time cost -1.932847 s
+Train for batch 44,data loading time cost -26.822789 s
+Train done,train time cost -1.934544 s
+Train for batch 45,data loading time cost -30.068981 s
+Train done,train time cost -1.908599 s
+Train for batch 46,data loading time cost -28.334684 s
+Train done,train time cost -1.926270 s
+Train for batch 47,data loading time cost -25.488196 s
+Train done,train time cost -1.928415 s
+Train for batch 48,data loading time cost -27.955437 s
+Train done,train time cost -1.908291 s
+Train for batch 49,data loading time cost -26.720415 s
+Train done,train time cost -1.929713 s
+Train for batch 50,data loading time cost -27.957343 s
+Train done,train time cost -1.934546 s
+Train for batch 51,data loading time cost -28.103290 s
+Train done,train time cost -1.907198 s
+Train for batch 52,data loading time cost -25.230562 s
+Train done,train time cost -1.936270 s
+Train for batch 53,data loading time cost -28.726218 s
+Train done,train time cost -1.908751 s
+Train for batch 54,data loading time cost -30.710816 s
+Train done,train time cost -1.916349 s
+Train for batch 55,data loading time cost -29.725646 s
+Train done,train time cost -1.941448 s
+Train for batch 56,data loading time cost -28.536822 s
+Train done,train time cost -1.904323 s
+Train for batch 57,data loading time cost -28.352016 s
+Train done,train time cost -1.935308 s
+Train for batch 58,data loading time cost -28.804979 s
+Train done,train time cost -1.938980 s
+Train for batch 59,data loading time cost -28.656045 s
+Train done,train time cost -1.909001 s
+Train for batch 60,data loading time cost -25.685770 s
+Train done,train time cost -1.936187 s
+Train for batch 61,data loading time cost -28.230263 s
+Train done,train time cost -1.927874 s
+Train for batch 62,data loading time cost -27.080681 s
+Train done,train time cost -1.906350 s
+Train for batch 63,data loading time cost -28.186172 s
+Train done,train time cost -1.937762 s
+Train for batch 64,data loading time cost -30.168887 s
+Train done,train time cost -1.936055 s
+Train for batch 65,data loading time cost -27.095816 s
+Train done,train time cost -1.905751 s
+Train for batch 66,data loading time cost -25.532757 s
+Train done,train time cost -1.942014 s
+Train for batch 67,data loading time cost -28.434217 s
+Train done,train time cost -1.906350 s
+Train for batch 68,data loading time cost -28.416762 s
+Train done,train time cost -1.938410 s
+Train for batch 69,data loading time cost -28.960013 s
+Train done,train time cost -1.942957 s
+Train for batch 70,data loading time cost -26.825179 s
+Train done,train time cost -1.904872 s
+Train for batch 71,data loading time cost -26.815541 s
+Train done,train time cost -1.927308 s
+Train for batch 72,data loading time cost -24.346808 s
+Train done,train time cost -1.918962 s
+Train for batch 73,data loading time cost -27.455676 s
+Train done,train time cost -1.908515 s
+Train for batch 74,data loading time cost -26.767809 s
+Train done,train time cost -1.942954 s
+Train for batch 75,data loading time cost -25.420977 s
+Train done,train time cost -1.905823 s
+Train for batch 76,data loading time cost -29.753313 s
+Train done,train time cost -1.941212 s
+Train for batch 77,data loading time cost -27.601721 s
+Train done,train time cost -1.928664 s
+Train for batch 78,data loading time cost -26.095312 s
+Train done,train time cost -1.907285 s
+Train for batch 79,data loading time cost -26.079689 s
+Train done,train time cost -1.927807 s
+Train for batch 80,data loading time cost -24.620878 s
+Train done,train time cost -1.931291 s

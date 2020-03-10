@@ -25,6 +25,10 @@ levels["day"]   = [0., 0.2,  5, 10,  20,  30,  40,  60,  100,  150,  200,  300]
 levels["week"]  = [0., 0.2,  10,  20,  30,  50, 100,  150,  200,  300,  500, 1000]
 levels["month"] = [0.,  10,  20,  30,  40,  50, 100,  200,  300,  500, 1000, 1500]
 levels["year"]  = [0.,  50, 100, 200, 300, 400, 600, 1000, 1500, 2000, 3000, 5000]
+levels["psl"]  = [9000, 100000,  100100, 100300,  100500,  100700,  100900,  101000,  101200,  101400,  101600,  101800]
+
+level["zg"]=[1400, 1411, 1422, 1433, 1444, 1455, 1466, 1477, 1488, 1499, 1510, 1521]
+
 enum={0:"0600",1:"1200",2:"1800",3:"0000",4:"0600"}
 
 
@@ -84,7 +88,7 @@ def load_2D_netCDF(filename, var_name, lat_name="latitude", lon_name="longitude"
 def load_3D_netCDF(filename, var_name="pr", lat_name="lat", lon_name="lon",idx=0):
     data = Dataset(filename, 'r')
 #     print(data)# lat(324), lon(432)
-    var = data[var_name][:][idx]#!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    var = data[var_name][idx]#!!!!!!!!!!!!!!!!!!!!!!!!!!!
     lats = data[lat_name][:]
     lons = data[lon_name][:]
     data.close()
@@ -92,20 +96,20 @@ def load_3D_netCDF(filename, var_name="pr", lat_name="lat", lon_name="lon",idx=0
 
 def read_access_data(filename, var_name="pr", lat_name="lat", lon_name="lon",idx=0):
     data = Dataset(filename, 'r')
-    var = data[var_name][:][idx]
+    var = data[var_name][idx]
     lats = data[lat_name][:]
     lons = data[lon_name][:]
     data.close()
     return xr.DataArray(var,coords=[lats,lons],dims=["lat","lon"])
 
-def read_access_zg(filename, var_name="zg", lat_name="lat", lon_name="lon",idx=0):
+def read_access_zg(filename, var_name="zg", lat_name="lat", lon_name="lon",idx=0,level="850"):
     data = Dataset(filename, 'r')
-    var = data[var_name][:][idx]
-    level=data["z1_p_level"][:]
+    var = data[var_name][idx][-3]
+#     level=data["z1_p_level"][:]
     lats = data[lat_name][:]
     lons = data[lon_name][:]
     data.close()
-    return xr.DataArray(var,coords=[level,lats,lons],dims=["level","lat","lon"])
+    return xr.DataArray(var,coords=[lats,lons],dims=["lat","lon"])
 
 
 
@@ -269,7 +273,55 @@ def map_aust_old(data, lat=None, lon=None,domain = [111.85, 156.275, -44.35, -9.
     return da,llats,llons
 
 
-def draw_aus_old(data, domain = [111.85, 155.875, -44.35, -9.975], level="day" ,titles_on = True, title = "BARRA-R precipitation", colormap = prcp_colormap, cmap_label = "Precipitation (mm)",save=False,path=""):
+def draw_aus_psl(data, domain = [111.85, 155.875, -44.35, -9.975], level="day" ,titles_on = True, title = "BARRA-R precipitation", colormap = prcp_colormap, cmap_label = "Precipitation (mm)",save=False,path="./"):
+    """ basema_ploting .py
+This function takes a 2D data set of a variable from BARRA and maps the data on miller projection. 
+The map default span is longitude between 111E and 155E, and the span for latitudes is -45 to -30, this is SE Australia. 
+The colour scale is YlGnBu at 11 levels. 
+The levels specifed are suitable for annual rainfall totals for SE Australia. 
+From the BARRA average netCDF, the mean prcp should be multiplied by 24*365
+"""
+#    lats.sort() #this doesn't do anything for BARRA
+#    lons.sort() #this doesn't do anything for BARRA
+#     domain = [111.975, 156.275, -44.525, -9.975]#awap
+    from matplotlib.colors import ListedColormap, BoundaryNorm
+    from mpl_toolkits.basemap import Basemap
+    fig=plt.figure()
+#     level=levels[level]
+    map = Basemap(projection = "mill", llcrnrlon = domain[0], llcrnrlat = domain[2], urcrnrlon = domain[1], urcrnrlat = domain[3], resolution = 'l')
+    map.drawcoastlines()
+    map.drawmapboundary()
+    map.drawparallels(np.arange(-90., 120., 5.),labels=[1,0,0,0])
+    map.drawmeridians(np.arange(-180.,180., 5.),labels=[0,0,0,1])
+    llons, llats = np.meshgrid(data["lon"].values, data["lat"].values) # 将维度按照 x,y 横向竖向
+#     print(lon.shape,llons.shape)
+    x,y = map(llons,llats)
+#     print(x.shape,y.shape)
+    
+    norm = BoundaryNorm(level, len(level)-1)
+    cs = map.pcolormesh(x, y, data, norm = norm, cmap = colormap) 
+#     cs = map.pcolormesh(x, y, data, cmap = prcp_colormap) 
+    
+    if titles_on:
+        # label with title, latitude, longitude, and colormap
+        
+        plt.title(title)
+        plt.xlabel("\n\nLongitude")
+        plt.ylabel("Latitude\n\n")
+        cbar = plt.colorbar(ticks = level[:-1], shrink = 0.8, extend = "max")
+        cbar.ax.set_ylabel(cmap_label)
+        cbar.ax.set_xticklabels(level)
+    if save:
+        plt.savefig(path+title)
+    else:
+        plt.show()
+    plt.cla()
+    plt.close("all")
+    return
+
+
+
+def draw_aus_old(data, domain = [111.85, 155.875, -44.35, -9.975], level="day" ,titles_on = True, title = "BARRA-R precipitation", colormap = prcp_colormap, cmap_label = "Precipitation (mm)",save=False,path="./"):
     """ basema_ploting .py
 This function takes a 2D data set of a variable from BARRA and maps the data on miller projection. 
 The map default span is longitude between 111E and 155E, and the span for latitudes is -45 to -30, this is SE Australia. 

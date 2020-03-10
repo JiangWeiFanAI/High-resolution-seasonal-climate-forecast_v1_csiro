@@ -3,7 +3,7 @@ import data_processing_tool as dpt
 from datetime import timedelta, date, datetime
 from args_parameter import args
 from PrepareData import ACCESS_BARRA_v4
-
+import torch
 import torch,os,torchvision
 import torch.nn as nn
 import torch.nn.functional as F
@@ -40,24 +40,25 @@ def write_log(log):
 
 
 def main():
-    pre_train_path="./model/save/temp01/last.pth"
+    
 #     pre_train_path="./model/save/temp01/"+0+".pth"
 
     
     
     init_date=date(1970, 1, 1)
     start_date=date(1990, 1, 2)
-    end_date=date(2012,12,25) #if 929 is true we should substract 1 day    
+    end_date=date(1990,12,25)
+#     end_date=date(2012,12,25) #if 929 is true we should substract 1 day    
     sys = platform.system()
     
     if sys == "Windows":
         init_date=date(1970, 1, 1)
         start_date=date(1990, 1, 2)
         end_date=date(1990,12,15) #if 929 is true we should substract 1 day   
-#         args.file_ACCESS_dir="H:/climate/access-s1/" 
-#         args.file_BARRA_dir="D:/dataset/accum_prcp/"
-        args.file_ACCESS_dir="E:/climate/access-s1/"
-        args.file_BARRA_dir="C:/Users/JIA059/barra/"
+        args.file_ACCESS_dir="H:/climate/access-s1/" 
+        args.file_BARRA_dir="D:/dataset/accum_prcp/"
+#         args.file_ACCESS_dir="E:/climate/access-s1/"
+#         args.file_BARRA_dir="C:/Users/JIA059/barra/"
         args.file_DEM_dir="../DEM/"
     else:
         args.file_ACCESS_dir_pr="/g/data/ub7/access-s1/hc/raw_model/atmos/pr/daily/"
@@ -69,7 +70,7 @@ def main():
     if args.pr:
         args.channels+=1
     if args.zg:
-        args.channels+=22
+        args.channels+=1
     if args.psl:
         args.channels+=1
     if args.tasmax:
@@ -79,10 +80,10 @@ def main():
     if args.dem:
         args.channels+=1
     access_rgb_mean= 2.9067910245780248e-05*86400
-
+    pre_train_path="./model/save/"+args.train_name+"/last_"+str(args.channels)+".pth"
     leading_time=217
-    args.leading_time_we_use=7
-    args.ensemble=2
+    args.leading_time_we_use=1
+    args.ensemble=1
 
 
     print(access_rgb_mean)
@@ -125,11 +126,11 @@ def main():
     ###################################################################################set a the dataLoader
     train_dataloders =DataLoader(train_data,
                                             batch_size=args.batch_size,
-                                            shuffle=False,
+                                            shuffle=True,
                                 num_workers=args.n_threads)
     val_dataloders =DataLoader(val_data,
                                             batch_size=args.batch_size,
-                                            shuffle=False,
+                                            shuffle=True,
                               num_workers=args.n_threads)
     ##
     def prepare( l, volatile=False):
@@ -157,10 +158,10 @@ def main():
     
     if args.resume==1:
         print("continue last train")
-        model_checkpoint = torch.load(pre_train_path)
+        model_checkpoint = torch.load(pre_train_path,map_location=device)
     else:
         print("restart train")
-        model_checkpoint = torch.load("./model/save/temp01/first_"+str(args.channels)+".pth")
+        model_checkpoint = torch.load("./model/save/"+args.train_name+"/first_"+str(args.channels)+".pth",map_location=device)
 
     my_net.load_state_dict(model_checkpoint['model'])
     optimizer_my.load_state_dict(model_checkpoint['optimizer'])
@@ -177,71 +178,279 @@ def main():
     my_net.to(device)
     
     ##########################################################################training
-
-    write_log("start")
-    max_error=np.inf
-    for e in range(args.epochs):
-        #train
-        my_net.train()
-        loss=0
-        start=time.time()
-        for batch, (pr,dem,psl,zg,tasmax,tasmain, hr,_,_) in enumerate(train_dataloders):
-            write_log("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
+    
+    if args.channels==1:
+        write_log("start")
+        max_error=np.inf
+        for e in range(args.epochs):
+            #train
+            my_net.train()
+            loss=0
             start=time.time()
-            lr, hr = prepare([lr, hr])
-            
-            optimizer_my.zero_grad()
-            with torch.set_grad_enabled(True):
-                sr = my_net(pr,dem,psl,zg,tasmax,tasmain)
-                running_loss =criterion(sr, hr)
-                
-                running_loss.backward()
-                optimizer_my.step()
-            loss+=running_loss #.copy()?
-            if batch%10==0:
+            for batch, (pr,hr,_,_) in enumerate(train_dataloders):
+                write_log("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
+
+    #             start=time.time()
+                pr,hr= prepare([pr,hr])
+                optimizer_my.zero_grad()
+                with torch.set_grad_enabled(True):
+                    sr = my_net(pr)
+                    print(pr.shape)
+                    print(sr.shape)
+
+                    running_loss =criterion(sr, hr)
+
+                    running_loss.backward()
+                    optimizer_my.step()
+                loss+=running_loss #.copy()?
+                if batch%10==0:
+                    state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
+                    torch.save(state, "./model/save/temp01/last.pth")
+                write_log("Train done,train time cost %f s,learning rate:%f, loss: %f"%(start-time.time(),optimizer_my.state_dict()['param_groups'][0]['lr'] ,running_loss.item()  ))
+                start=time.time()
+
+            #validation
+            my_net.eval()
+            start=time.time()
+            with torch.no_grad():
+                eval_psnr=0
+                eval_ssim=0
+    #             tqdm_val = tqdm(val_dataloders, ncols=80)
+                for batch, (pr,hr,_,_) in enumerate(val_dataloders):
+                    pr,hr = prepare([pr,hr])
+                    sr = my_net(pr,dem)
+                    val_loss=criterion(sr, hr)
+                    for ssr,hhr in zip(sr,hr):
+                        eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+                        eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+
+            write_log("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+                      e,
+                      time.time()-start,
+                      optimizer_my.state_dict()['param_groups'][0]['lr'],
+                      loss.item()/len(train_data),
+                      val_loss
+                 ))
+    #         print("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+    #                   e,
+    #                   time.time()-start,
+    #                   optimizer_my.state_dict()['param_groups'][0]['lr'],
+    #                   loss.item()/len(train_data),
+    #                   val_loss
+    #              ))
+            if running_loss<max_error:
+                max_error=running_loss
+        #         torch.save(net,train_loss"_"+str(e)+".pkl")
+                if not os.path.exists("./model/save/"+args.train_name+"/"):
+                    os.mkdir("./model/save/"+args.train_name+"/")
+                write_log("saving")
                 state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
-                torch.save(state, "./model/save/temp01/last.pth")
-            write_log("Train done,train time cost %f s,loss: %f"%(start-time.time(),running_loss.item()  ))
-            start=time.time()
+                torch.save(state, "./model/save/temp01/"+str(e)+".pth")
+    #             torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
 
-        #validation
-        my_net.eval()
-        start=time.time()
-        with torch.no_grad():
-            eval_psnr=0
-            eval_ssim=0
-#             tqdm_val = tqdm(val_dataloders, ncols=80)
-            for idx_img, (pr,dem,psl,zg,tasmax,tasmain, hr,_,_) in enumerate(val_dataloders):
-                lr, hr = prepare([lr, hr])
-                sr = my_net(pr,dem,psl,zg,tasmax,tasmain)
-                val_loss=criterion(sr, hr)
-                for ssr,hhr in zip(sr,hr):
-                    eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
-                    eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
-                    
-        write_log("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
-                  e,
-                  time.time()-start,
-                  optimizer_my.state_dict()['param_groups'][0]['lr'],
-                  loss.item()/len(train_data),
-                  val_loss
-             ))
-#         print("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
-#                   e,
-#                   time.time()-start,
-#                   optimizer_my.state_dict()['param_groups'][0]['lr'],
-#                   loss.item()/len(train_data),
-#                   val_loss
-#              ))
-        if running_loss<max_error:
-            max_error=running_loss
-    #         torch.save(net,train_loss"_"+str(e)+".pkl")
-            if not os.path.exists("./model/save/"+args.train_name+"/"):
-                os.mkdir("./model/save/"+args.train_name+"/")
-            write_log("saving")
-            state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
-            torch.save(state, "./model/save/temp01/"+e+".pth")
-#             torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
+
+    
+    if args.channels==2:
+        write_log("start")
+        max_error=np.inf
+        for e in range(args.epochs):
+            #train
+            my_net.train()
+            loss=0
+            start=time.time()
+            for batch, (pr,dem,hr,_,_) in enumerate(train_dataloders):
+                write_log("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
+                start=time.time()
+                pr,dem,hr= prepare([pr,dem,hr])
+
+                optimizer_my.zero_grad()
+                with torch.set_grad_enabled(True):
+                    sr = my_net(pr,dem)
+                    running_loss =criterion(sr, hr)
+
+                    running_loss.backward()
+                    optimizer_my.step()
+                loss+=running_loss #.copy()?
+                if batch%10==0:
+                    state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
+                    torch.save(state, "./model/save/temp01/last_"+str(args.channels)+".pth")
+                write_log("Train done,train time cost %f s,loss: %f"%(start-time.time(),running_loss.item()  ))
+                start=time.time()
+
+            #validation
+            my_net.eval()
+            start=time.time()
+            with torch.no_grad():
+                eval_psnr=0
+                eval_ssim=0
+    #             tqdm_val = tqdm(val_dataloders, ncols=80)
+                for idx_img, (pr,dem,hr,_,_) in enumerate(val_dataloders):
+                    pr,dem,hr = prepare([pr,dem,hr])
+                    sr = my_net(pr,dem)
+                    val_loss=criterion(sr, hr)
+                    for ssr,hhr in zip(sr,hr):
+                        eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+                        eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+
+            write_log("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+                      e,
+                      time.time()-start,
+                      optimizer_my.state_dict()['param_groups'][0]['lr'],
+                      loss.item()/len(train_data),
+                      val_loss
+                 ))
+    #         print("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+    #                   e,
+    #                   time.time()-start,
+    #                   optimizer_my.state_dict()['param_groups'][0]['lr'],
+    #                   loss.item()/len(train_data),
+    #                   val_loss
+    #              ))
+            if running_loss<max_error:
+                max_error=running_loss
+        #         torch.save(net,train_loss"_"+str(e)+".pkl")
+                if not os.path.exists("./model/save/"+args.train_name+"/"):
+                    os.mkdir("./model/save/"+args.train_name+"/")
+                write_log("saving")
+                state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
+                torch.save(state, "./model/save/temp01/"+str(e)+".pth")
+    #             torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
+    
+    
+    if args.channels==3:
+        write_log("start")
+        max_error=np.inf
+        for e in range(args.epochs):
+            #train
+            my_net.train()
+            loss=0
+            start=time.time()
+            for batch, (pr,dem,tasmax,hr,_,_) in enumerate(train_dataloders):
+                write_log("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
+                start=time.time()
+                pr,dem,tasmax,hr= prepare([pr,dem,tasmax,hr])
+
+                optimizer_my.zero_grad()
+                with torch.set_grad_enabled(True):
+                    sr = my_net(pr,dem)
+                    running_loss =criterion(sr, hr,tasmax=tasmax)
+
+                    running_loss.backward()
+                    optimizer_my.step()
+                loss+=running_loss #.copy()?
+                if batch%10==0:
+                    state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
+                    torch.save(state, "./model/save/temp01/last.pth")
+                write_log("Train done,train time cost %f s,loss: %f"%(start-time.time(),running_loss.item()  ))
+                start=time.time()
+
+            #validation
+            my_net.eval()
+            start=time.time()
+            with torch.no_grad():
+                eval_psnr=0
+                eval_ssim=0
+    #             tqdm_val = tqdm(val_dataloders, ncols=80)
+                for idx_img, (pr,dem,psl,zg,tasmax,tasmin, hr,_,_) in enumerate(val_dataloders):
+                    pr,dem,psl,zg,tasmax,tasmin, hr = prepare([pr,dem,psl,zg,tasmax,tasmin, hr])
+                    sr = my_net(pr,dem,psl,zg,tasmax,tasmin)
+                    val_loss=criterion(sr, hr)
+                    for ssr,hhr in zip(sr,hr):
+                        eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+                        eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+
+            write_log("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+                      e,
+                      time.time()-start,
+                      optimizer_my.state_dict()['param_groups'][0]['lr'],
+                      loss.item()/len(train_data),
+                      val_loss
+                 ))
+    #         print("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+    #                   e,
+    #                   time.time()-start,
+    #                   optimizer_my.state_dict()['param_groups'][0]['lr'],
+    #                   loss.item()/len(train_data),
+    #                   val_loss
+    #              ))
+            if running_loss<max_error:
+                max_error=running_loss
+        #         torch.save(net,train_loss"_"+str(e)+".pkl")
+                if not os.path.exists("./model/save/"+args.train_name+"/"):
+                    os.mkdir("./model/save/"+args.train_name+"/")
+                write_log("saving")
+                state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
+                torch.save(state, "./model/save/temp01/"+str(e)+".pth")
+    #             torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")    
+    
+    
+    
+            
+    else:
+        write_log("start")
+        max_error=np.inf
+        for e in range(args.epochs):
+            #train
+            my_net.train()
+            loss=0
+            start=time.time()
+            for batch, (pr,dem,psl,zg,tasmax,tasmin, hr,_,_) in enumerate(train_dataloders):
+                write_log("Train for batch %d,data loading time cost %f s"%(batch,start-time.time()))
+                start=time.time()
+                pr,dem,psl,zg,tasmax,tasmin, hr = prepare([pr,dem,psl,zg,tasmax,tasmin, hr])
+
+                optimizer_my.zero_grad()
+                with torch.set_grad_enabled(True):
+                    sr = my_net(pr,dem,psl,zg,tasmax,tasmin)
+                    running_loss =criterion(sr, hr)
+
+                    running_loss.backward()
+                    optimizer_my.step()
+                loss+=running_loss #.copy()?
+                if batch%10==0:
+                    state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
+                    torch.save(state, "./model/save/temp01/last.pth")
+                write_log("Train done,train time cost %f s,loss: %f"%(start-time.time(),running_loss.item()  ))
+                start=time.time()
+
+            #validation
+            my_net.eval()
+            start=time.time()
+            with torch.no_grad():
+                eval_psnr=0
+                eval_ssim=0
+    #             tqdm_val = tqdm(val_dataloders, ncols=80)
+                for idx_img, (pr,dem,psl,zg,tasmax,tasmin, hr,_,_) in enumerate(val_dataloders):
+                    pr,dem,psl,zg,tasmax,tasmin, hr = prepare([pr,dem,psl,zg,tasmax,tasmin, hr])
+                    sr = my_net(pr,dem,psl,zg,tasmax,tasmin)
+                    val_loss=criterion(sr, hr)
+                    for ssr,hhr in zip(sr,hr):
+                        eval_psnr+=compare_psnr(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+                        eval_ssim+=compare_ssim(ssr[0].cpu().numpy(),hhr[0].cpu().numpy(),data_range=(hhr[0].cpu().max()-hhr[0].cpu().min()).item() )
+
+            write_log("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+                      e,
+                      time.time()-start,
+                      optimizer_my.state_dict()['param_groups'][0]['lr'],
+                      loss.item()/len(train_data),
+                      val_loss
+                 ))
+    #         print("epoche: %d,time cost %f s, lr: %f, train_loss: %f,validation loss:%f "%(
+    #                   e,
+    #                   time.time()-start,
+    #                   optimizer_my.state_dict()['param_groups'][0]['lr'],
+    #                   loss.item()/len(train_data),
+    #                   val_loss
+    #              ))
+            if running_loss<max_error:
+                max_error=running_loss
+        #         torch.save(net,train_loss"_"+str(e)+".pkl")
+                if not os.path.exists("./model/save/"+args.train_name+"/"):
+                    os.mkdir("./model/save/"+args.train_name+"/")
+                write_log("saving")
+                state = {'model': my_net.state_dict(), 'optimizer': optimizer_my.state_dict(), 'epoch': e}
+                torch.save(state, "./model/save/temp01/"+str(e)+".pth")
+    #             torch.save(net,"./model/save/"+args.train_name+"/"+str(e)+".pkl")
             
             
 if __name__=='__main__':
